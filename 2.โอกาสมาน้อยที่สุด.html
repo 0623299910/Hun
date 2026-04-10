@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-Digit Bottom Specialized Analyzer (Auto-Calculate)</title>
+    <style>
+        :root { --danger: #e11d48; --success: #10b981; --dark: #1e293b; --accent: #3b82f6; }
+        body { font-family: 'Chakra Petch', sans-serif; background-color: #f1f5f9; padding: 20px; color: var(--dark); }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: var(--dark); border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 25px; }
+        
+        .input-box { margin-bottom: 20px; position: relative; }
+        label { font-weight: bold; display: block; margin-bottom: 8px; color: #475569; }
+        textarea { 
+            width: 100%; 
+            height: 160px; 
+            padding: 15px; 
+            border: 2px solid #cbd5e1; 
+            border-radius: 10px; 
+            font-family: 'Courier New', monospace; 
+            font-size: 14px;
+            box-sizing: border-box; 
+            transition: all 0.3s ease;
+            resize: vertical;
+        }
+        textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        
+        .hint { font-size: 0.85rem; color: #64748b; margin-top: 5px; text-align: right; display: block; }
+
+        button { 
+            width: 100%; 
+            padding: 16px; 
+            background: var(--dark); 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 18px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: transform 0.1s, background 0.2s; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:hover { background: #334155; }
+        button:active { transform: scale(0.98); }
+
+        .result-card { margin-top: 30px; display: none; animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .dead-zone { 
+            background: #fff1f2; 
+            border: 2px solid #fecdd3; 
+            padding: 25px; 
+            border-radius: 12px; 
+            text-align: center; 
+            margin-bottom: 25px; 
+        }
+        .dead-number { font-size: 56px; color: var(--danger); font-weight: 800; display: block; margin: 10px 0; letter-spacing: 2px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 15px; background: white; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 14px; text-align: center; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; font-weight: 700; color: #475569; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #f8fafc; }
+        .highlight { color: var(--danger); font-weight: bold; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="container">
+    <h2>🎯 วิเคราะห์ความน่าจะเป็น (เฉพาะ 2 ตัวล่าง)</h2>
+    
+    <div class="input-box">
+        <label for="dataInput">วางข้อมูลจากตาราง (Excel):</label>
+        <textarea id="dataInput" placeholder="ตัวอย่าง:
+2026-01-21	'320	'57
+2026-01-20	'995	'10
+..."></textarea>
+        <span class="hint">💡 เคล็ดลับ: <b>วางข้อมูล</b> ระบบจะคำนวณให้อัตโนมัติ หรือกด <b>Enter</b> เพื่อคำนวณ</span>
+    </div>
+
+    <button onclick="analyzeBottomTwo()" id="calcBtn">คำนวณเลขที่โอกาสมาน้อยที่สุด</button>
+
+    <div id="resultArea" class="result-card">
+        <div class="dead-zone">
+            <span>เลขเด่น (0-9) ที่มีโอกาสมาน้อยที่สุดใน 2 ตัวล่าง</span>
+            <span class="dead-number" id="deadDigits">-</span>
+            <small id="logicNote" style="color: #64748b;"></small>
+        </div>
+
+        <h3>ตารางวิเคราะห์สถิติเชิงลึก</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>เลข</th>
+                    <th>ออกทั้งหมด</th>
+                    <th>หายไป (Gap)</th>
+                    <th>Z-Score (เบี่ยงเบน)</th>
+                    <th>คะแนนความดับ</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const textArea = document.getElementById('dataInput');
+        
+        // 1. ดักจับเมื่อมีการกดปุ่ม Enter
+        textArea.addEventListener("keydown", function(event) {
+            // ถ้ากด Enter (โดยไม่ได้กด Shift ค้างไว้) ให้ทำการคำนวณ
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault(); // ป้องกันการขึ้นบรรทัดใหม่
+                analyzeBottomTwo();
+            }
+        });
+
+        // 2. ดักจับเมื่อมีการ "วาง" ข้อมูล (Auto-Calculate)
+        textArea.addEventListener("input", function() {
+            const rawData = textArea.value.trim();
+            // ถ้าข้อมูลที่ใส่เข้ามามีมากกว่า 1 บรรทัด (แปลว่าน่าจะก๊อปตารางมาวาง) ให้คำนวณทันที
+            if (rawData.split('\n').length >= 2) {
+                analyzeBottomTwo(true); // ส่ง true ไปเพื่อบอกว่าเป็น Auto ไม่ต้องขึ้น Alert กวนใจถ้าข้อมูลผิด
+            }
+        });
+    });
+
+    // เพิ่มพารามิเตอร์ isAuto เพื่อเช็คว่าถ้าคำนวณออโต้แล้วข้อมูลไม่ครบ จะได้ไม่เด้ง Alert กวนใจผู้ใช้
+    function analyzeBottomTwo(isAuto = false) {
+        const rawData = document.getElementById('dataInput').value.trim();
+        if (!rawData) {
+            if (!isAuto) alert("กรุณาใส่ข้อมูลก่อนคำนวณ");
+            return;
+        }
+
+        const lines = rawData.split('\n');
+        let bottomNumbers = [];
+
+        lines.forEach(line => {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length >= 2) {
+                const bottom = parts[parts.length - 1].replace(/'/g, ''); 
+                if (/^\d+$/.test(bottom)) {
+                    bottomNumbers.push(bottom);
+                }
+            }
+        });
+
+        if (bottomNumbers.length < 2) {
+            if (!isAuto) alert("ข้อมูลไม่เพียงพอ หรือรูปแบบข้อมูลไม่ถูกต้อง (ต้องมีอย่างน้อย 2 งวด)");
+            return;
+        }
+
+        let stats = Array(10).fill(0).map((_, i) => ({ 
+            num: i, count: 0, gap: -1, zScore: 0, finalScore: 0 
+        }));
+
+        bottomNumbers.forEach((numStr, index) => {
+            for (let digitChar of numStr) {
+                let d = parseInt(digitChar);
+                stats[d].count++;
+                if (stats[d].gap === -1) stats[d].gap = index;
+            }
+        });
+
+        stats.forEach(s => { if (s.gap === -1) s.gap = bottomNumbers.length; });
+
+        const counts = stats.map(s => s.count);
+        const mean = counts.reduce((a, b) => a + b, 0) / 10;
+        
+        const variance = counts.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / 10;
+        const stdDev = Math.sqrt(variance);
+
+        stats.forEach(s => {
+            s.zScore = stdDev === 0 ? 0 : ((s.count - mean) / stdDev).toFixed(2);
+            
+            let recencyBonus = bottomNumbers[0].includes(s.num.toString()) ? 20 : 0;
+            
+            s.finalScore = (parseFloat(s.zScore) * 15 + s.gap * 5 + recencyBonus).toFixed(1);
+        });
+
+        stats.sort((a, b) => b.finalScore - a.finalScore);
+
+        const resultArea = document.getElementById('resultArea');
+        resultArea.style.display = 'block';
+        
+        // เลื่อนหน้าจอลงมาดูผลลัพธ์เล็กน้อย
+        resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        document.getElementById('deadDigits').innerText = stats[0].num + " และ " + stats[1].num;
+        document.getElementById('logicNote').innerText = `*วิเคราะห์จากฐานข้อมูล ${bottomNumbers.length} งวดล่าสุด`;
+
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        stats.forEach(s => {
+            let zClass = s.zScore > 1.5 ? 'color: #e11d48; font-weight:bold;' : (s.zScore < -1.5 ? 'color: #3b82f6;' : '');
+
+            tbody.innerHTML += `<tr>
+                <td style="font-weight:bold; font-size:1.1em;">${s.num}</td>
+                <td>${s.count}</td>
+                <td>${s.gap} งวด</td>
+                <td style="${zClass}">${s.zScore}</td>
+                <td class="highlight">${s.finalScore}</td>
+            </tr>`;
+        });
+    }
+</script>
+</body>
+</html>

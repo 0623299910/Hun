@@ -1,0 +1,1153 @@
+<!doctype html>
+<html lang="th" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เครื่องมือวิเคราะห์สถิติหวย (Auto-Process)</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    * {
+      font-family: 'Kanit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    
+    .stat-card {
+      transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    
+    .number-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 8px;
+    }
+    
+    .number-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    
+    .number-cell:hover {
+      transform: scale(1.1);
+      z-index: 10;
+    }
+    
+    .heat-level-0 { background: #10b981; color: white; }
+    .heat-level-1 { background: #84cc16; color: white; }
+    .heat-level-2 { background: #eab308; color: white; }
+    .heat-level-3 { background: #f97316; color: white; }
+    .heat-level-4 { background: #ef4444; color: white; }
+    
+    .tab-button {
+      transition: all 0.3s ease;
+    }
+    
+    .tab-button.active {
+      border-bottom: 3px solid;
+    }
+    
+    .analysis-mode-btn {
+      transition: all 0.3s ease;
+    }
+    
+    .analysis-mode-btn.active {
+      border-color: white !important;
+      box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.4s ease;
+    }
+
+    .digit-card {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .digit-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div id="app" class="h-full w-full overflow-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+   <div class="min-h-full p-6">
+    <div class="max-w-7xl mx-auto"><div class="text-center mb-8">
+      <h1 id="appTitle" class="text-5xl font-bold text-white mb-3 drop-shadow-lg">เครื่องมือวิเคราะห์สถิติหวย</h1>
+      <p id="subtitle" class="text-xl text-purple-100">วางข้อมูล Excel แล้วระบบจะวิเคราะห์ให้ทันที</p>
+     </div><div class="bg-white rounded-t-2xl shadow-xl">
+      <div class="flex border-b border-gray-200">
+        <button class="tab-button active flex-1 py-4 px-6 text-center font-semibold text-purple-600 border-purple-600" data-tab="analysis"> 📊 วิเคราะห์สถิติ </button> 
+        <button class="tab-button flex-1 py-4 px-6 text-center font-semibold text-gray-600" data-tab="backtest"> 🔍 ตรวจสอบย้อนหลัง </button> 
+        <button class="tab-button flex-1 py-4 px-6 text-center font-semibold text-gray-600" data-tab="data"> 📝 จัดการข้อมูล (วางที่นี่) </button>
+      </div><div id="analysisTab" class="p-8">
+       <div id="analysisContent"></div>
+      </div><div id="backtestTab" class="p-8 hidden">
+       <div id="backtestContent"></div>
+      </div><div id="dataTab" class="p-8 hidden">
+       <div class="max-w-3xl mx-auto">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">วางข้อมูลเพื่อคำนวณ</h2>
+        <p class="text-gray-600 mb-6">วางข้อมูลในรูปแบบ: วัน/เดือน/ปี [tab] เลข3ตัว [tab] เลข2ตัว (ระบบจะคำนวณอัตโนมัติเมื่อวางเสร็จ)</p>
+        <textarea id="dataInput" class="w-full h-64 p-4 border-2 border-gray-300 rounded-xl text-base focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all" placeholder="ตัวอย่าง:
+12/12/25	'616	'89
+15/12/25	'668	'52
+16/12/25	233	65"></textarea>
+        <div class="flex gap-4 mt-6">
+            <button id="loadDataBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition-all transform hover:scale-105"> ✅ คำนวณด้วยตัวเอง </button> 
+            <button id="clearInputBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition-all"> 🗑️ ล้าง </button>
+        </div>
+        <div id="dataStatus" class="mt-6 text-center"></div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      app_title: "เครื่องมือวิเคราะห์สถิติหวย",
+      subtitle: "วางข้อมูล Excel แล้วระบบจะวิเคราะห์ให้ทันที",
+      background_gradient_start: "#667eea",
+      background_gradient_end: "#764ba2",
+      primary_color: "#7c3aed"
+    };
+
+    let lottoData = [];
+    let currentMode = 'balanced';
+
+    // Initialize with default data
+    const defaultData = `4/12/25	406	61
+5/12/25	456	50
+8/12/25	304	52
+9/12/25	460	56
+10/12/25	574	14
+11/12/25	805	31
+12/12/25	616	89
+15/12/25	668	52
+16/12/25	233	65
+17/12/25	557	76
+18/12/25	694	63`;
+
+    function parseData(text) {
+      const lines = text.trim().split('\n');
+      const data = [];
+      
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        
+        if (parts.length >= 3) {
+          const date = parts[0].trim();
+          const threeDigit = parts[1].trim().replace(/'/g, '');
+          const twoDigit = parts[2].trim().replace(/'/g, '');
+          
+          if (twoDigit.length === 2 && /^\d+$/.test(twoDigit)) {
+            const ones = parseInt(twoDigit[1]);
+            const tens = parseInt(twoDigit[0]);
+            const numValue = parseInt(twoDigit);
+            
+            data.push({
+              date,
+              threeDigit,
+              twoDigit,
+              ones,
+              tens,
+              sum: (tens + ones) % 10,
+              isOdd: numValue % 2 === 1,
+              isEven: numValue % 2 === 0,
+              range: Math.floor(numValue / 10),
+              isLowRange: numValue < 50,
+              isHighRange: numValue >= 50,
+              isSameDigit: tens === ones
+            });
+          }
+        }
+      }
+      
+      return data;
+    }
+
+    function analyzeSingleDigitFrequency(data) {
+      const freq = Array(10).fill(0);
+      const lastSeen = Array(10).fill(-1);
+      
+      data.forEach((item, index) => {
+        freq[item.tens]++;
+        freq[item.ones]++;
+        lastSeen[item.tens] = index;
+        lastSeen[item.ones] = index;
+      });
+      
+      const gaps = lastSeen.map(last => {
+        if (last === -1) return data.length;
+        return data.length - 1 - last;
+      });
+      
+      return { freq, gaps };
+    }
+
+    function analyzeBalancedMode(data) {
+      const { freq, gaps } = analyzeSingleDigitFrequency(data);
+      const digitScores = [];
+      
+      for (let i = 0; i <= 9; i++) {
+        let score = 0;
+        if (freq[i] === 0) score += 100;
+        else score += (1 - freq[i] / (data.length * 2)) * 50;
+        score += (gaps[i] / data.length) * 50;
+        
+        digitScores.push({
+          digit: i,
+          score: score,
+          frequency: freq[i],
+          gap: gaps[i],
+          info: `ถี่: ${freq[i]} | ห่าง: ${gaps[i]}`
+        });
+      }
+      
+      digitScores.sort((a, b) => b.score - a.score);
+      return {
+        top7: digitScores.slice(0, 7),
+        bottom3: digitScores.slice(7, 10),
+        method: 'วิเคราะห์จากความถี่และช่วงห่างแบบสมดุล'
+      };
+    }
+
+    function analyzeHotMode(data) {
+      const recentData = data.slice(-Math.min(15, data.length));
+      const freq = Array(10).fill(0);
+      
+      recentData.forEach(item => {
+        freq[item.tens]++;
+        freq[item.ones]++;
+      });
+      
+      const digitScores = [];
+      for (let i = 0; i <= 9; i++) {
+        digitScores.push({
+          digit: i,
+          score: freq[i],
+          frequency: freq[i],
+          gap: 0,
+          info: `ออก ${freq[i]} ครั้งใน ${recentData.length} งวดล่าสุด`
+        });
+      }
+      
+      digitScores.sort((a, b) => b.score - a.score);
+      return {
+        top7: digitScores.slice(0, 7),
+        bottom3: digitScores.slice(7, 10),
+        method: `วิเคราะห์จาก ${recentData.length} งวดล่าสุด - เลขที่ออกบ่อยมีแนวโน้มจะออกต่อ`
+      };
+    }
+
+    function analyzeColdMode(data) {
+      const { freq, gaps } = analyzeSingleDigitFrequency(data);
+      const digitScores = [];
+      
+      for (let i = 0; i <= 9; i++) {
+        const score = gaps[i] * 0.7 + (1 - freq[i] / (data.length * 2)) * 100 * 0.3;
+        
+        digitScores.push({
+          digit: i,
+          score: score,
+          frequency: freq[i],
+          gap: gaps[i],
+          info: `ห่าง ${gaps[i]} งวด | ออกแค่ ${freq[i]} ครั้ง`
+        });
+      }
+      
+      digitScores.sort((a, b) => b.score - a.score);
+      return {
+        top7: digitScores.slice(0, 7),
+        bottom3: digitScores.slice(7, 10),
+        method: 'วิเคราะห์เลขที่ห่างนานและออกน้อย - ถึงเวลาออก!'
+      };
+    }
+
+    function analyzeTrendMode(data) {
+      if (data.length < 5) return analyzeBalancedMode(data);
+      
+      const followPattern = {}; 
+      for (let d = 0; d <= 9; d++) followPattern[d] = Array(10).fill(0);
+      
+      for (let i = 1; i < data.length; i++) {
+        const prevTens = data[i-1].tens;
+        const prevOnes = data[i-1].ones;
+        const currTens = data[i].tens;
+        const currOnes = data[i].ones;
+        
+        followPattern[prevTens][currTens]++;
+        followPattern[prevOnes][currOnes]++;
+      }
+      
+      const lastDraw = data[data.length - 1];
+      const scores = Array(10).fill(0);
+      
+      scores[lastDraw.tens] += followPattern[lastDraw.tens].reduce((a,b) => a+b, 0);
+      scores[lastDraw.ones] += followPattern[lastDraw.ones].reduce((a,b) => a+b, 0);
+      
+      for (let d = 0; d <= 9; d++) {
+        scores[d] += followPattern[lastDraw.tens][d] * 2;
+        scores[d] += followPattern[lastDraw.ones][d] * 2;
+      }
+      
+      const { freq, gaps } = analyzeSingleDigitFrequency(data);
+      const digitScores = [];
+      
+      for (let i = 0; i <= 9; i++) {
+        const trendScore = scores[i];
+        const gapBonus = gaps[i] > 5 ? 20 : 0;
+        
+        digitScores.push({
+          digit: i,
+          score: trendScore + gapBonus,
+          frequency: freq[i],
+          gap: gaps[i],
+          info: `แนวโน้มตาม ${lastDraw.twoDigit}: ${trendScore.toFixed(0)}`
+        });
+      }
+      
+      digitScores.sort((a, b) => b.score - a.score);
+      return {
+        top7: digitScores.slice(0, 7),
+        bottom3: digitScores.slice(7, 10),
+        method: `วิเคราะห์รูปแบบการออกตามหลังงวด ${lastDraw.twoDigit}`
+      };
+    }
+
+    function analyzeWeightedMode(data) {
+      const { freq, gaps } = analyzeSingleDigitFrequency(data);
+      const weights = [];
+      
+      for (let i = 0; i <= 9; i++) {
+        const gapWeight = Math.max(1, gaps[i]);
+        const freqWeight = Math.max(1, data.length * 2 - freq[i]);
+        weights[i] = gapWeight * freqWeight;
+      }
+      
+      const totalWeight = weights.reduce((a, b) => a + b, 0);
+      const digitScores = [];
+      
+      for (let i = 0; i <= 9; i++) {
+        const probability = (weights[i] / totalWeight * 100);
+        
+        digitScores.push({
+          digit: i,
+          score: probability,
+          frequency: freq[i],
+          gap: gaps[i],
+          info: `โอกาส ${probability.toFixed(1)}% (น้ำหนัก: ${weights[i]})`
+        });
+      }
+      
+      digitScores.sort((a, b) => b.score - a.score);
+      return {
+        top7: digitScores.slice(0, 7),
+        bottom3: digitScores.slice(7, 10),
+        method: 'คำนวณน้ำหนักโอกาสจากความถี่และช่วงห่าง'
+      };
+    }
+
+    function analyzeMathMode(data) {
+      const { freq, gaps } = analyzeSingleDigitFrequency(data);
+      const fib = [0, 1, 1, 2, 3, 5, 8];
+      const fibSet = new Set(fib);
+      const primes = new Set([2, 3, 5, 7]);
+      const squares = new Set([0, 1, 4, 9]);
+      const digitScores = [];
+      
+      for (let i = 0; i <= 9; i++) {
+        let score = 0;
+        if (fibSet.has(i)) score += 30;
+        if (primes.has(i)) score += 25;
+        if (squares.has(i)) score += 20;
+        score += gaps[i] * 2;
+        if (freq[i] < data.length * 0.15) score += 25;
+        
+        const mathProps = [];
+        if (fibSet.has(i)) mathProps.push('Fib');
+        if (primes.has(i)) mathProps.push('Prime');
+        if (squares.has(i)) mathProps.push('Square');
+        
+        digitScores.push({
+          digit: i,
+          score: score,
+          frequency: freq[i],
+          gap: gaps[i],
+          info: mathProps.length > 0 ? mathProps.join(', ') : 'ปกติ'
+        });
+      }
+      
+      digitScores.sort((a, b) => b.score - a.score);
+      return {
+        top7: digitScores.slice(0, 7),
+        bottom3: digitScores.slice(7, 10),
+        method: 'วิเคราะห์ตามคณิตศาสตร์: Fibonacci, จำนวนเฉพาะ, กำลังสอง'
+      };
+    }
+
+    function getAnalysisByMode(mode, data) {
+      switch(mode) {
+        case 'hot': return analyzeHotMode(data);
+        case 'cold': return analyzeColdMode(data);
+        case 'trend': return analyzeTrendMode(data);
+        case 'weighted': return analyzeWeightedMode(data);
+        case 'math': return analyzeMathMode(data);
+        default: return analyzeBalancedMode(data);
+      }
+    }
+
+    function getModeInfo(mode) {
+      const info = {
+        balanced: { title: '7 ตัวเลขแนะนำ - โหมดสมดุล ⚖️', description: 'วิเคราะห์จากทั้งความถี่และช่วงห่างแบบสมดุล เหมาะสำหรับผู้เริ่มต้น', emoji: '⚖️' },
+        hot: { title: '7 ตัวเลขแนะนำ - โหมดเลขร้อน 🔥', description: 'เลขที่ออกบ่อยในงวดล่าสุด (15 งวด) มีแนวโน้มจะออกต่อเนื่อง', emoji: '🔥' },
+        cold: { title: '7 ตัวเลขแนะนำ - โหมดเลขเย็น ❄️', description: 'เลขที่ห่างนานและออกน้อย - ถึงเวลาที่จะออกแล้ว!', emoji: '❄️' },
+        trend: { title: '7 ตัวเลขแนะนำ - โหมดแนวโน้ม 📈', description: 'วิเคราะห์รูปแบบการออกตามหลังเลขบางตัว เลขที่มักออกเป็นคู่', emoji: '📈' },
+        weighted: { title: '7 ตัวเลขแนะนำ - โหมดสุ่มถ่วงน้ำหนัก 🎲', description: 'คำนวณน้ำหนักโอกาสของแต่ละตัว สุ่มแต่ไม่สุ่ม!', emoji: '🎲' },
+        math: { title: '7 ตัวเลขแนะนำ - โหมดคณิตศาสตร์ 🧮', description: 'วิเคราะห์ตามทฤษฎี Fibonacci, จำนวนเฉพาะ, กำลังสอง', emoji: '🧮' }
+      };
+      return info[mode] || info.balanced;
+    }
+
+    function analyzeFrequency(data) {
+      const freq = {};
+      for (let i = 0; i <= 99; i++) { freq[i.toString().padStart(2, '0')] = 0; }
+      data.forEach(item => { freq[item.twoDigit] = (freq[item.twoDigit] || 0) + 1; });
+      return freq;
+    }
+
+    function analyzeDigitPosition(data) {
+      const ones = Array(10).fill(0);
+      const tens = Array(10).fill(0);
+      data.forEach(item => { ones[item.ones]++; tens[item.tens]++; });
+      return { ones, tens };
+    }
+
+    function analyzeSum(data) {
+      const sums = Array(10).fill(0);
+      data.forEach(item => { sums[item.sum]++; });
+      return sums;
+    }
+
+    function analyzeGap(data) {
+      const gaps = {};
+      for (let i = 0; i <= 99; i++) {
+        const num = i.toString().padStart(2, '0');
+        gaps[num] = { lastSeen: -1, currentGap: data.length, maxGap: 0, avgGap: 0, appearances: [] };
+      }
+      
+      data.forEach((item, index) => {
+        const num = item.twoDigit;
+        gaps[num].appearances.push(index);
+        gaps[num].lastSeen = index;
+      });
+      
+      Object.keys(gaps).forEach(num => {
+        const appearances = gaps[num].appearances;
+        if (appearances.length > 0) {
+          gaps[num].currentGap = data.length - appearances[appearances.length - 1] - 1;
+          const gapList = [];
+          for (let i = 1; i < appearances.length; i++) {
+            gapList.push(appearances[i] - appearances[i-1] - 1);
+          }
+          if (gapList.length > 0) {
+            gaps[num].maxGap = Math.max(...gapList);
+            gaps[num].avgGap = gapList.reduce((a, b) => a + b, 0) / gapList.length;
+          }
+        }
+      });
+      return gaps;
+    }
+
+    function calculateProbabilityScore(num, freq, gaps, data) {
+      const frequency = freq[num];
+      const gap = gaps[num];
+      let score = 0;
+      if (frequency === 0) score += 100;
+      else score += (1 - frequency / data.length) * 50;
+      score += (gap.currentGap / data.length) * 30;
+      if (gap.avgGap > 0) { score += Math.min((gap.avgGap / data.length) * 20, 20); }
+      return score;
+    }
+
+    function getHeatLevel(count, max) {
+      if (max === 0) return 0;
+      const ratio = count / max;
+      if (ratio >= 0.8) return 4;
+      if (ratio >= 0.6) return 3;
+      if (ratio >= 0.4) return 2;
+      if (ratio >= 0.2) return 1;
+      return 0;
+    }
+
+    function renderTop7Section(analysisResult) {
+      const modeInfo = getModeInfo(currentMode);
+      const { top7, bottom3, method } = analysisResult;
+      
+      return `
+        <div class="grid grid-cols-7 gap-4 mb-6">
+          ${top7.map((item, index) => `
+            <div class="digit-card text-center">
+              <div class="bg-yellow-400 text-gray-900 font-bold text-5xl py-8 px-4 rounded-2xl shadow-2xl border-4 border-yellow-300 relative">
+                <div class="absolute -top-3 -left-3 bg-red-500 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shadow-lg">
+                  ${index + 1}
+                </div>
+                ${item.digit}
+              </div>
+              <div class="mt-3 space-y-1">
+                <div class="text-sm bg-white bg-opacity-20 rounded px-2 py-1 font-semibold">
+                  ${item.info}
+                </div>
+                <div class="text-xs bg-white bg-opacity-30 rounded px-2 py-1">
+                  คะแนน: ${item.score.toFixed(1)}
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="bg-white bg-opacity-10 rounded-xl p-4 border-2 border-white border-opacity-30 mb-6">
+          <h4 class="font-bold text-lg mb-2">${modeInfo.emoji} ${method}</h4>
+          <p class="text-sm opacity-90">${modeInfo.description}</p>
+        </div>
+
+        <div class="bg-red-500 bg-opacity-20 rounded-xl p-4 border-2 border-red-300 border-opacity-50">
+          <h4 class="font-bold text-lg mb-3 flex items-center">
+            <span class="mr-2">⚠️</span>
+            3 ตัวที่เหลือ - ควรระวัง (โอกาสต่ำ)
+          </h4>
+          <div class="grid grid-cols-3 gap-3">
+            ${bottom3.map((item) => `
+              <div class="text-center">
+                <div class="bg-red-400 bg-opacity-40 text-white font-bold text-3xl py-4 px-3 rounded-xl border-2 border-red-300">
+                  ${item.digit}
+                </div>
+                <div class="mt-2 text-sm">
+                  <div>${item.info}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAnalysis() {
+      if (lottoData.length === 0) {
+        document.getElementById('analysisContent').innerHTML = `
+          <div class="text-center py-16">
+            <div class="text-6xl mb-4">📊</div>
+            <h3 class="text-2xl font-bold text-gray-700 mb-2">ยังไม่มีข้อมูล</h3>
+            <p class="text-gray-500">กรุณาไปที่แท็บ "จัดการข้อมูล" เพื่อเพิ่มข้อมูล</p>
+          </div>
+        `;
+        return;
+      }
+
+      const freq = analyzeFrequency(lottoData);
+      const { ones, tens } = analyzeDigitPosition(lottoData);
+      const sums = analyzeSum(lottoData);
+      const gaps = analyzeGap(lottoData);
+      
+      const analysisResult = getAnalysisByMode(currentMode, lottoData);
+      const { top7, bottom3 } = analysisResult;
+
+      const probabilityScores = [];
+      for (let i = 0; i <= 99; i++) {
+        const num = i.toString().padStart(2, '0');
+        const score = calculateProbabilityScore(num, freq, gaps, lottoData);
+        probabilityScores.push({ num, score, frequency: freq[num], gap: gaps[num].currentGap });
+      }
+      
+      probabilityScores.sort((a, b) => b.score - a.score);
+      const topAvoid = probabilityScores.slice(0, 20);
+      const bottomAvoid = probabilityScores.slice(-20);
+
+      const sortedFreq = Object.entries(freq).sort((a, b) => a[1] - b[1]);
+      const leastFrequent = sortedFreq.slice(0, 10);
+      const mostFrequent = sortedFreq.slice(-10).reverse();
+
+      const maxFreq = Math.max(...Object.values(freq));
+      const maxOnes = Math.max(...ones);
+      const maxTens = Math.max(...tens);
+      const maxSum = Math.max(...sums);
+
+      const modeInfo = getModeInfo(currentMode);
+
+      let html = `
+        <div class="space-y-8 fade-in">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+              <div class="text-4xl mb-2">📅</div>
+              <div class="text-3xl font-bold">${lottoData.length}</div>
+              <div class="text-blue-100">งวดทั้งหมด</div>
+            </div>
+            <div class="stat-card bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
+              <div class="text-4xl mb-2">🎯</div>
+              <div class="text-3xl font-bold">${leastFrequent[0][0]}</div>
+              <div class="text-green-100">เลขออกน้อยสุด (${leastFrequent[0][1]} ครั้ง)</div>
+            </div>
+            <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+              <div class="text-4xl mb-2">🔥</div>
+              <div class="text-3xl font-bold">${mostFrequent[0][0]}</div>
+              <div class="text-purple-100">เลขออกบ่อยสุด (${mostFrequent[0][1]} ครั้ง)</div>
+            </div>
+            <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg">
+              <div class="text-4xl mb-2">⏱️</div>
+              <div class="text-3xl font-bold">${topAvoid[0].gap}</div>
+              <div class="text-orange-100">งวดห่างนานสุด (${topAvoid[0].num})</div>
+            </div>
+          </div>
+
+          <div class="stat-card bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 shadow-lg text-white">
+            <h3 class="text-2xl font-bold mb-4 flex items-center">
+              <span class="text-3xl mr-3">🎛️</span>
+              เลือกโหมดวิเคราะห์
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <button class="analysis-mode-btn ${currentMode === 'balanced' ? 'active border-2 border-white' : ''} bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-left transition-all transform hover:scale-105" data-mode="balanced">
+                <div class="text-2xl mb-1">⚖️</div>
+                <div class="font-bold">สมดุล</div>
+                <div class="text-xs opacity-90">ถี่+ห่าง</div>
+              </button>
+              <button class="analysis-mode-btn ${currentMode === 'hot' ? 'active border-2 border-white' : ''} bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-left transition-all transform hover:scale-105" data-mode="hot">
+                <div class="text-2xl mb-1">🔥</div>
+                <div class="font-bold">เลขร้อน</div>
+                <div class="text-xs opacity-90">ออกบ่อยล่าสุด</div>
+              </button>
+              <button class="analysis-mode-btn ${currentMode === 'cold' ? 'active border-2 border-white' : ''} bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-left transition-all transform hover:scale-105" data-mode="cold">
+                <div class="text-2xl mb-1">❄️</div>
+                <div class="font-bold">เลขเย็น</div>
+                <div class="text-xs opacity-90">ห่างนาน</div>
+              </button>
+              <button class="analysis-mode-btn ${currentMode === 'trend' ? 'active border-2 border-white' : ''} bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-left transition-all transform hover:scale-105" data-mode="trend">
+                <div class="text-2xl mb-1">📈</div>
+                <div class="font-bold">แนวโน้ม</div>
+                <div class="text-xs opacity-90">รูปแบบการออก</div>
+              </button>
+              <button class="analysis-mode-btn ${currentMode === 'weighted' ? 'active border-2 border-white' : ''} bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-left transition-all transform hover:scale-105" data-mode="weighted">
+                <div class="text-2xl mb-1">🎲</div>
+                <div class="font-bold">สุ่มถ่วงน้ำหนัก</div>
+                <div class="text-xs opacity-90">โอกาสสูง</div>
+              </button>
+              <button class="analysis-mode-btn ${currentMode === 'math' ? 'active border-2 border-white' : ''} bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-left transition-all transform hover:scale-105" data-mode="math">
+                <div class="text-2xl mb-1">🧮</div>
+                <div class="font-bold">คณิตศาสตร์</div>
+                <div class="text-xs opacity-90">Fibonacci+ลำดับ</div>
+              </button>
+            </div>
+          </div>
+
+          <div class="stat-card bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-8 shadow-lg text-white">
+            <h3 class="text-3xl font-bold mb-4 flex items-center">
+              <span class="text-4xl mr-3">🎯</span>
+              ${modeInfo.title}
+            </h3>
+            <p class="text-lg mb-6 text-emerald-100">
+              <strong>💡 คำอธิบาย:</strong> ตัวเลขเหล่านี้มีโอกาสจะติดมา <span class="text-2xl font-bold bg-white bg-opacity-20 px-3 py-1 rounded">1-2 ตัว</span> ในงวดถัดไป<br>
+              <span class="text-base">ตัวอย่าง: หากเลข <strong>5</strong> มีคะแนนสูง แปลว่ามีโอกาสเจอ 05, 15, 25, 35, 45, 50, 51, 52...59 ฯลฯ</span>
+            </p>
+            ${renderTop7Section(analysisResult)}
+          </div>
+
+          <div class="stat-card bg-gradient-to-br from-sky-400 to-blue-500 rounded-2xl p-8 shadow-lg text-white">
+            <h3 class="text-3xl font-bold mb-6 flex items-center">
+              <span class="text-4xl mr-3">🤖</span>
+              คะแนนความน่าจะเป็นเลข 2 ตัว (00-99)
+            </h3>
+            <p class="text-lg mb-6 text-sky-100">วิเคราะห์จาก: ความถี่ + ช่วงห่าง + รูปแบบการออก</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 class="text-xl font-bold mb-4 flex items-center">
+                  <span class="mr-2">🚫</span>
+                  TOP 20 ควรหลีกเลี่ยง
+                </h4>
+                <div class="grid grid-cols-5 gap-2">
+                  ${topAvoid.map((item) => `
+                    <div class="text-center">
+                      <div class="bg-rose-400 bg-opacity-80 rounded-lg p-2 shadow-md hover:shadow-lg transition-all">
+                        <div class="text-2xl font-bold">${item.num}</div>
+                        <div class="text-xs mt-1">
+                          ${item.frequency === 0 ? '❌ ไม่เคย' : `${item.frequency} ครั้ง`}<br>
+                          ห่าง ${item.gap}
+                        </div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+              <div>
+                <h4 class="text-xl font-bold mb-4 flex items-center">
+                  <span class="mr-2">✅</span>
+                  TOP 20 ปลอดภัย
+                </h4>
+                <div class="grid grid-cols-5 gap-2">
+                  ${bottomAvoid.slice(0, 20).reverse().map((item) => `
+                    <div class="text-center">
+                      <div class="bg-emerald-400 bg-opacity-80 rounded-lg p-2 shadow-md hover:shadow-lg transition-all">
+                        <div class="text-2xl font-bold">${item.num}</div>
+                        <div class="text-xs mt-1">
+                          ${item.frequency} ครั้ง<br>
+                          ห่าง ${item.gap}
+                        </div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card bg-white rounded-2xl p-6 shadow-lg">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+              <span class="text-3xl mr-3">⭐</span>
+              เลข 2 ตัวที่ออกน้อย - แนะนำหลีกเลี่ยง
+            </h3>
+            <div class="grid grid-cols-5 md:grid-cols-10 gap-3">
+              ${leastFrequent.map(([num, count]) => `
+                <div class="text-center">
+                  <div class="bg-red-500 text-white font-bold text-xl py-3 px-2 rounded-lg shadow-md hover:shadow-lg transition-all">${num}</div>
+                  <div class="text-sm text-gray-600 mt-1">${count} ครั้ง</div>
+                  <div class="text-xs text-red-600 font-semibold">ห่าง ${gaps[num].currentGap} งวด</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="stat-card bg-white rounded-2xl p-6 shadow-lg">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+              <span class="text-3xl mr-3">🔥</span>
+              เลข 2 ตัวที่ออกบ่อย - เสี่ยงสูง
+            </h3>
+            <div class="grid grid-cols-5 md:grid-cols-10 gap-3">
+              ${mostFrequent.map(([num, count]) => `
+                <div class="text-center">
+                  <div class="bg-orange-500 text-white font-bold text-xl py-3 px-2 rounded-lg shadow-md hover:shadow-lg transition-all">${num}</div>
+                  <div class="text-sm text-gray-600 mt-1">${count} ครั้ง</div>
+                  <div class="text-xs text-green-600 font-semibold">ห่าง ${gaps[num].currentGap} งวด</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="stat-card bg-white rounded-2xl p-6 shadow-lg">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+              <span class="text-3xl mr-3">🗺️</span>
+              แผนที่ความถี่ทั้งหมด (00-99)
+            </h3>
+            <p class="text-gray-600 mb-4">สีเข้ม = ออกบ่อย | สีอ่อน = ออกน้อย</p>
+            <div class="number-grid mb-4">
+              ${Array.from({length: 100}, (_, i) => {
+                const num = i.toString().padStart(2, '0');
+                const count = freq[num];
+                const level = getHeatLevel(count, maxFreq);
+                return `
+                  <div class="number-cell heat-level-${level}" title="${num}: ${count} ครั้ง, ห่าง ${gaps[num].currentGap} งวด">
+                    ${num}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            <div class="flex items-center justify-center gap-4 text-sm flex-wrap">
+              <div class="flex items-center gap-2"><div class="w-6 h-6 rounded heat-level-0"></div><span>น้อยมาก</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-6 rounded heat-level-1"></div><span>น้อย</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-6 rounded heat-level-2"></div><span>ปานกลาง</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-6 rounded heat-level-3"></div><span>มาก</span></div>
+              <div class="flex items-center gap-2"><div class="w-6 h-6 rounded heat-level-4"></div><span>มากที่สุด</span></div>
+            </div>
+          </div>
+
+          <div class="stat-card bg-white rounded-2xl p-6 shadow-lg">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+              <span class="text-3xl mr-3">➕</span>
+              แต้มรวม (หลักหน่วย 0-9)
+            </h3>
+            <p class="text-gray-600 mb-4">แต้ม = (หลักสิบ + หลักหน่วย) % 10 เช่น 89 → (8+9)%10 = 7</p>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+              ${sums.map((count, sum) => {
+                const width = maxSum > 0 ? (count / maxSum * 100) : 0;
+                const isLeast = count > 0 && count === Math.min(...sums.filter(c => c > 0));
+                return `
+                  <div class="bg-gray-50 rounded-xl p-4 border-2 ${isLeast ? 'border-red-500' : 'border-gray-200'} hover:shadow-lg transition-all">
+                    <div class="text-center mb-2">
+                      <div class="text-3xl font-bold ${isLeast ? 'text-red-600' : 'text-gray-800'}">แต้ม ${sum}</div>
+                      ${isLeast ? '<div class="text-xs text-red-600 font-semibold mt-1">⭐ น้อยสุด</div>' : ''}
+                    </div>
+                    <div class="text-center text-sm text-gray-600 mb-2">${count} ครั้ง</div>
+                    <div class="bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div class="h-full ${isLeast ? 'bg-red-500' : 'bg-purple-500'} rounded-full transition-all duration-500" style="width: ${width}%"></div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="stat-card bg-white rounded-2xl p-6 shadow-lg">
+              <h3 class="text-xl font-bold text-gray-800 mb-4">🎯 ปักหลักหน่วย (ตัวท้าย)</h3>
+              <div class="space-y-2">
+                ${ones.map((count, digit) => {
+                  const width = maxOnes > 0 ? (count / maxOnes * 100) : 0;
+                  const isLeast = count > 0 && count === Math.min(...ones.filter(c => c > 0));
+                  return `
+                    <div>
+                      <div class="flex justify-between text-sm mb-1">
+                        <span class="font-semibold">${digit} ${isLeast ? '⭐ น้อยสุด' : ''}</span>
+                        <span class="text-gray-600">${count} ครั้ง</span>
+                      </div>
+                      <div class="bg-gray-200 rounded-full h-6 overflow-hidden">
+                        <div class="h-full ${isLeast ? 'bg-red-500' : 'bg-blue-500'} rounded-full transition-all duration-500" style="width: ${width}%"></div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+            <div class="stat-card bg-white rounded-2xl p-6 shadow-lg">
+              <h3 class="text-xl font-bold text-gray-800 mb-4">🎯 ปักหลักสิบ (ตัวหน้า)</h3>
+              <div class="space-y-2">
+                ${tens.map((count, digit) => {
+                  const width = maxTens > 0 ? (count / maxTens * 100) : 0;
+                  const isLeast = count > 0 && count === Math.min(...tens.filter(c => c > 0));
+                  return `
+                    <div>
+                      <div class="flex justify-between text-sm mb-1">
+                        <span class="font-semibold">${digit} ${isLeast ? '⭐ น้อยสุด' : ''}</span>
+                        <span class="text-gray-600">${count} ครั้ง</span>
+                      </div>
+                      <div class="bg-gray-200 rounded-full h-6 overflow-hidden">
+                        <div class="h-full ${isLeast ? 'bg-red-500' : 'bg-green-500'} rounded-full transition-all duration-500" style="width: ${width}%"></div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card bg-white rounded-2xl p-6 shadow-lg">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+              <span class="text-3xl mr-3">📜</span>
+              ผลย้อนหลัง ${Math.min(10, lottoData.length)} งวดล่าสุด
+            </h3>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b-2 border-gray-300">
+                    <th class="text-left py-3 px-4 font-semibold">วันที่</th>
+                    <th class="text-center py-3 px-4 font-semibold">3 ตัว</th>
+                    <th class="text-center py-3 px-4 font-semibold">2 ตัว</th>
+                    <th class="text-center py-3 px-4 font-semibold">แต้ม</th>
+                    <th class="text-center py-3 px-4 font-semibold">คู่/คี่</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${lottoData.slice(-10).reverse().map(item => `
+                    <tr class="border-b border-gray-200 hover:bg-gray-50">
+                      <td class="py-3 px-4">${item.date}</td>
+                      <td class="text-center py-3 px-4 font-semibold">${item.threeDigit}</td>
+                      <td class="text-center py-3 px-4"><span class="bg-purple-600 text-white px-3 py-1 rounded-lg font-bold text-lg">${item.twoDigit}</span></td>
+                      <td class="text-center py-3 px-4"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded font-semibold">${item.sum}</span></td>
+                      <td class="text-center py-3 px-4 text-sm">${item.isOdd ? '<span class="text-orange-600 font-semibold">คี่</span>' : '<span class="text-green-600 font-semibold">คู่</span>'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="stat-card bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-8 shadow-lg text-white">
+            <h3 class="text-3xl font-bold mb-6 flex items-center">
+              <span class="text-4xl mr-3">💡</span>
+              สรุปและคำแนะนำ
+            </h3>
+            <div class="space-y-4 text-lg">
+              <div class="bg-white bg-opacity-20 rounded-xl p-4">
+                <strong>🎯 Top 7 ตัวเลข (0-9) ที่แนะนำ:</strong> ${top7.map(d => d.digit).join(', ')}
+                <span class="block text-base mt-1 opacity-90">มีโอกาสติดมา 1-2 ตัว ในงวดถัดไป</span>
+              </div>
+              <div class="bg-white bg-opacity-20 rounded-xl p-4">
+                <strong>⚠️ 3 ตัวที่เหลือควรระวัง:</strong> ${bottom3.map(d => d.digit).join(', ')}
+                <span class="block text-base mt-1 opacity-90">โอกาสออกต่ำกว่า</span>
+              </div>
+              <div class="bg-white bg-opacity-20 rounded-xl p-4">
+                <strong>🚫 TOP 5 เลข 2 ตัวควรหลีกเลี่ยง:</strong> ${topAvoid.slice(0, 5).map(item => item.num).join(', ')}
+                <span class="block text-base mt-1 opacity-90">(คะแนนสูงสุด = โอกาสออกน้อยมาก)</span>
+              </div>
+              <div class="bg-white bg-opacity-20 rounded-xl p-4">
+                <strong>✅ TOP 5 เลข 2 ตัวปลอดภัย:</strong> ${bottomAvoid.slice(-5).reverse().map(item => item.num).join(', ')}
+                <span class="block text-base mt-1 opacity-90">(คะแนนต่ำสุด = มีโอกาสออก)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('analysisContent').innerHTML = html;
+      
+      document.querySelectorAll('.analysis-mode-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const mode = btn.dataset.mode;
+          if (mode !== currentMode) {
+            currentMode = mode;
+            renderAnalysis();
+          }
+        });
+      });
+    }
+
+    function renderBacktest() {
+      if (lottoData.length < 21) {
+        document.getElementById('backtestContent').innerHTML = `
+          <div class="text-center py-16">
+            <div class="text-6xl mb-4">⚠️</div>
+            <h3 class="text-2xl font-bold text-gray-700 mb-2">ข้อมูลไม่เพียงพอ</h3>
+            <p class="text-gray-500">ต้องการข้อมูลอย่างน้อย 21 งวด (ปัจจุบัน ${lottoData.length} งวด)</p>
+          </div>
+        `;
+        return;
+      }
+
+      const backtestResults = [];
+      
+      for (let i = lottoData.length - 1; i >= Math.max(0, lottoData.length - 20); i--) {
+        const currentDraw = lottoData[i];
+        const actualNumber = currentDraw.twoDigit;
+        const actualTens = currentDraw.tens;
+        const actualOnes = currentDraw.ones;
+        
+        const historicalData = lottoData.slice(0, i);
+        if (historicalData.length === 0) continue;
+        
+        const { freq: histDigitFreq, gaps: histDigitGaps } = analyzeSingleDigitFrequency(historicalData);
+        
+        const digitScores = [];
+        for (let d = 0; d <= 9; d++) {
+          let score = 0;
+          if (histDigitFreq[d] === 0) score += 100;
+          else score += (1 - histDigitFreq[d] / (historicalData.length * 2)) * 50;
+          score += (histDigitGaps[d] / historicalData.length) * 50;
+          digitScores.push({ digit: d, score: score });
+        }
+        
+        digitScores.sort((a, b) => b.score - a.score);
+        const top7 = digitScores.slice(0, 7).map(d => d.digit);
+        
+        const tensMatch = top7.includes(actualTens);
+        const onesMatch = top7.includes(actualOnes);
+        const isMatch = tensMatch || onesMatch;
+        
+        backtestResults.push({
+          date: currentDraw.date, actualNumber, actualTens, actualOnes, top7, tensMatch, onesMatch, isMatch
+        });
+      }
+      
+      const totalTests = backtestResults.length;
+      const successCount = backtestResults.filter(r => r.isMatch).length;
+      const accuracy = totalTests > 0 ? (successCount / totalTests * 100) : 0;
+      
+      let html = `
+        <div class="space-y-6 fade-in">
+          <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-8 shadow-lg text-white">
+            <h3 class="text-3xl font-bold mb-4 flex items-center"><span class="text-4xl mr-3">📈</span> สรุปผลการทดสอบย้อนหลัง 20 งวด</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div class="bg-white bg-opacity-20 rounded-xl p-6 text-center">
+                <div class="text-5xl font-bold">${totalTests}</div><div class="text-lg mt-2">งวดที่ทดสอบ</div>
+              </div>
+              <div class="bg-white bg-opacity-20 rounded-xl p-6 text-center">
+                <div class="text-5xl font-bold text-green-300">${successCount}</div><div class="text-lg mt-2">ถูก (ติดอย่างน้อย 1 ตัว)</div>
+              </div>
+              <div class="bg-white bg-opacity-20 rounded-xl p-6 text-center">
+                <div class="text-5xl font-bold ${accuracy >= 50 ? 'text-yellow-300' : 'text-red-300'}">${accuracy.toFixed(1)}%</div><div class="text-lg mt-2">อัตราความแม่นยำ</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-8 shadow-lg">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center"><span class="text-3xl mr-3">📋</span> รายละเอียดแต่ละงวด</h3>
+            <div class="space-y-4">
+              ${backtestResults.map((result, index) => `
+                <div class="border-2 ${result.isMatch ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-gray-50'} rounded-xl p-6">
+                  <div class="flex items-start justify-between mb-4">
+                    <div>
+                      <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl font-bold text-gray-700">งวดที่ ${totalTests - index}</span>
+                        <span class="text-gray-600">📅 ${result.date}</span>
+                        ${result.isMatch ? '<span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">✓ ถูก</span>' : '<span class="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">✗ พลาด</span>'}
+                      </div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-xs text-gray-500 mb-1">เลขที่ออกจริง</div>
+                      <div class="bg-gradient-to-br from-purple-600 to-indigo-600 text-white font-bold text-3xl px-6 py-3 rounded-xl shadow-lg">${result.actualNumber}</div>
+                      <div class="mt-2 text-sm text-gray-700">
+                        หลักสิบ: <span class="font-bold ${result.tensMatch ? 'text-green-600' : 'text-red-600'}">${result.actualTens} ${result.tensMatch ? '✓' : '✗'}</span> | 
+                        หลักหน่วย: <span class="font-bold ${result.onesMatch ? 'text-green-600' : 'text-red-600'}">${result.actualOnes} ${result.onesMatch ? '✓' : '✗'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-gray-700 mb-3 flex items-center"><span class="mr-2">🎯</span> Top 7 ที่แนะนำ (ตอนนั้น):</div>
+                    <div class="grid grid-cols-7 gap-2">
+                      ${result.top7.map(digit => {
+                        const isHighlight = digit === result.actualTens || digit === result.actualOnes;
+                        return `
+                          <div class="text-center">
+                            <div class="font-bold text-2xl py-3 px-2 rounded-lg ${isHighlight ? 'bg-green-500 text-white shadow-lg border-4 border-green-600' : 'bg-gray-200 text-gray-700'}">
+                              ${digit}
+                            </div>
+                          </div>
+                        `;
+                      }).join('')}
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('backtestContent').innerHTML = html;
+    }
+
+    // ฟังก์ชันรันการคำนวณและ Auto-process
+    function executeCalculation() {
+      const input = document.getElementById('dataInput').value.trim();
+      if (input.length < 10) return;
+
+      lottoData = parseData(input);
+      if (lottoData.length > 0) {
+        document.getElementById('dataStatus').innerHTML = `
+          <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl">
+            ✅ โหลดข้อมูล ${lottoData.length} งวดสำเร็จ! กำลังวิเคราะห์...
+          </div>
+        `;
+        
+        renderAnalysis();
+        
+        setTimeout(() => {
+          document.querySelector('[data-tab="analysis"]').click();
+          document.getElementById('dataStatus').innerHTML = '';
+        }, 500);
+      }
+    }
+
+    // Event listeners สำหรับ Auto-Process
+    const dataInput = document.getElementById('dataInput');
+    
+    dataInput.addEventListener('input', () => {
+        clearTimeout(window.calcTimeout);
+        window.calcTimeout = setTimeout(executeCalculation, 1000); 
+    });
+
+    dataInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            setTimeout(executeCalculation, 100);
+        }
+    });
+
+    document.getElementById('loadDataBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      executeCalculation();
+    });
+
+    document.getElementById('clearInputBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('dataInput').value = '';
+      document.getElementById('dataStatus').innerHTML = `
+        <div class="bg-gray-100 border border-gray-400 text-gray-700 px-4 py-3 rounded-xl">
+          🗑️ ล้างข้อมูลเรียบร้อย
+        </div>
+      `;
+      setTimeout(() => { document.getElementById('dataStatus').innerHTML = ''; }, 2000);
+    });
+
+    // Tab switching
+    document.querySelectorAll('.tab-button').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tabName = btn.dataset.tab;
+        
+        document.querySelectorAll('.tab-button').forEach(b => {
+          b.classList.remove('active', 'text-purple-600', 'border-purple-600');
+          b.classList.add('text-gray-600');
+        });
+        
+        btn.classList.add('active', 'text-purple-600', 'border-purple-600');
+        btn.classList.remove('text-gray-600');
+        
+        document.getElementById('analysisTab').classList.toggle('hidden', tabName !== 'analysis');
+        document.getElementById('backtestTab').classList.toggle('hidden', tabName !== 'backtest');
+        document.getElementById('dataTab').classList.toggle('hidden', tabName !== 'data');
+        
+        if (tabName === 'backtest') renderBacktest();
+      });
+    });
+
+    // SDK Init
+    async function onConfigChange(config) {
+      const appTitle = document.getElementById('appTitle');
+      const subtitle = document.getElementById('subtitle');
+      const app = document.getElementById('app');
+      
+      if (appTitle) appTitle.textContent = config.app_title || defaultConfig.app_title;
+      if (subtitle) subtitle.textContent = config.subtitle || defaultConfig.subtitle;
+      if (app) {
+        const gradientStart = config.background_gradient_start || defaultConfig.background_gradient_start;
+        const gradientEnd = config.background_gradient_end || defaultConfig.background_gradient_end;
+        app.style.background = `linear-gradient(135deg, ${gradientStart} 0%, ${gradientEnd} 100%)`;
+      }
+    }
+
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          { get: () => config.background_gradient_start || defaultConfig.background_gradient_start, set: (value) => { config.background_gradient_start = value; if (window.elementSdk) window.elementSdk.setConfig({ background_gradient_start: value }); } },
+          { get: () => config.background_gradient_end || defaultConfig.background_gradient_end, set: (value) => { config.background_gradient_end = value; if (window.elementSdk) window.elementSdk.setConfig({ background_gradient_end: value }); } },
+          { get: () => config.primary_color || defaultConfig.primary_color, set: (value) => { config.primary_color = value; if (window.elementSdk) window.elementSdk.setConfig({ primary_color: value }); } }
+        ],
+        borderables: [], fontEditable: undefined, fontSizeable: undefined
+      };
+    }
+
+    function mapToEditPanelValues(config) {
+      return new Map([ ["app_title", config.app_title || defaultConfig.app_title], ["subtitle", config.subtitle || defaultConfig.subtitle] ]);
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({ defaultConfig, onConfigChange, mapToCapabilities, mapToEditPanelValues });
+    }
+
+    // Load default data on start
+    lottoData = parseData(defaultData);
+    renderAnalysis();
+  </script>
+ </body>
+</html>

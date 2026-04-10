@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สูตรดับล่าง V.2 (Quick Mode)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        .font-mono { font-family: 'Roboto Mono', monospace; }
+        
+        /* Animation for Toast */
+        @keyframes slideInUp {
+            from { transform: translate(-50%, 100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #065f46; /* emerald-800 */
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        .toast.show {
+            animation: slideInUp 0.3s forwards;
+            opacity: 1;
+        }
+        .toast.hide {
+            animation: fadeOut 0.3s forwards;
+        }
+
+        /* Focus styles */
+        textarea:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fa-solid fa-circle-check text-green-300"></i>
+        <span class="font-bold">คัดลอกเรียบร้อย!</span>
+        <span class="text-xs opacity-75 border-l border-white/30 pl-2 ml-1">พร้อมวางใน GoodNotes</span>
+    </div>
+
+    <div class="w-full max-w-3xl bg-white shadow-2xl rounded-2xl overflow-hidden">
+        
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-6 text-white text-center relative">
+            <h1 class="text-2xl font-bold mb-1"><i class="fa-solid fa-bolt text-yellow-400"></i> โหมดรวดเร็ว (Quick Mode)</h1>
+            <p class="text-slate-400 text-sm">สูตรดับล่าง V.2 • วาง Excel > กด Enter > วาง GoodNotes</p>
+            
+            <div class="absolute top-4 right-4">
+                <span class="bg-white/10 px-2 py-1 rounded text-xs text-slate-300 border border-white/20">
+                    Auto Copy: ON <i class="fa-solid fa-toggle-on text-green-400 ml-1"></i>
+                </span>
+            </div>
+        </div>
+
+        <div class="p-6 md:p-8">
+            
+            <!-- Input Area -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-bold mb-2 flex justify-between">
+                    <span><i class="fa-regular fa-paste mr-1"></i> วางข้อมูลที่นี่:</span>
+                    <span class="text-xs text-blue-600 font-normal bg-blue-50 px-2 py-1 rounded">กด Enter เพื่อคำนวณและคัดลอกทันที</span>
+                </label>
+                <textarea id="raw-input" rows="8" 
+                    class="w-full p-4 border border-gray-300 rounded-xl bg-gray-50 font-mono text-sm resize-none transition-colors placeholder-gray-400" 
+                    placeholder="วางข้อมูลจาก Excel แล้วกด Enter...&#10;ตัวอย่าง:&#10;2024-01-01	'979	'61&#10;2024-01-17	'063	'09"></textarea>
+            </div>
+
+            <!-- Result Area (Auto-Updated) -->
+            <div id="result-container" class="opacity-50 transition-all duration-300 filter blur-[1px]">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-gray-800 font-bold"><i class="fa-solid fa-calculator text-blue-500"></i> ผลลัพธ์ล่าสุด (5 คู่)</h3>
+                    <span id="date-ref" class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">รอข้อมูล...</span>
+                </div>
+                
+                <div class="bg-blue-50 border-2 border-blue-100 rounded-xl p-6 text-center relative group cursor-pointer hover:bg-blue-100 transition" onclick="manualCopy()">
+                    <div id="display-numbers" class="text-3xl md:text-4xl font-mono font-bold text-slate-700 tracking-wider flex justify-center gap-4 md:gap-8 flex-wrap">
+                        <span>--</span> <span>--</span> <span>--</span> <span>--</span> <span>--</span>
+                    </div>
+                    
+                    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition text-blue-400 text-xs">
+                        คลิกเพื่อคัดลอกอีกครั้ง
+                    </div>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <button onclick="clearAll()" class="text-gray-400 hover:text-red-500 text-sm transition flex items-center justify-center gap-1 mx-auto">
+                        <i class="fa-solid fa-rotate-right"></i> ล้างค่าเริ่มต้นใหม่
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const textArea = document.getElementById('raw-input');
+            
+            // Focus textarea on load
+            textArea.focus();
+
+            // Keydown Listener for "Enter"
+            textArea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault(); // Stop new line
+                    processAndAutoCopy();
+                }
+            });
+        });
+
+        // --- 2. Main Logic (Process + Auto Copy) ---
+        let currentResultString = ""; // Store for manual copy re-trigger
+
+        function processAndAutoCopy() {
+            const rawText = document.getElementById('raw-input').value;
+            if (!rawText.trim()) return; // Do nothing if empty
+
+            // Step A: Parse Data
+            const lines = rawText.split('\n');
+            const data = [];
+            
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) return;
+                const parts = trimmedLine.split(/\s+/); // Handle Tabs or Spaces
+                
+                if (parts.length >= 3) {
+                    const date = parts[0];
+                    const top = parts[1].replace(/'/g, '').replace(/\D/g, ''); 
+                    const bot = parts[2].replace(/'/g, '').replace(/\D/g, '');
+
+                    if (top.length === 3 && bot.length === 2) {
+                        data.push({ date: date, top3: top, bot2: bot });
+                    }
+                }
+            });
+
+            if (data.length < 1) {
+                showToast("ไม่พบข้อมูลที่ถูกต้อง", true);
+                return;
+            }
+
+            // Step B: Calculate V.2 Logic (Last Row)
+            // Note: Normally needs previous row, if only 1 row pasted, we can't calculate based on "Previous". 
+            // Assuming user pastes at least 1 row that IS the previous result to calculate the NEXT.
+            // Or pastes history. We take the LAST valid row as "Previous" to predict the NEXT.
+            
+            const lastData = data[data.length - 1];
+            const prediction = calculateDeadPairsV2(lastData.top3, lastData.bot2);
+
+            // Step C: Update UI
+            updateUI(prediction, lastData.date);
+
+            // Step D: Format String for GoodNotes & Copy
+            // Format: "XX      XX      XX      XX      XX" (Wide spaces)
+            currentResultString = prediction.join("      ");
+            
+            copyToClipboard(currentResultString);
+        }
+
+        // --- 3. Calculation Formula (V.2 - UNCHANGED) ---
+        function calculateDeadPairsV2(prevTop, prevBot) {
+            try {
+                const t0 = parseInt(prevTop.charAt(0)); 
+                const t1 = parseInt(prevTop.charAt(1)); 
+                const t2 = parseInt(prevTop.charAt(2)); 
+                const b0 = parseInt(prevBot.charAt(0)); 
+                const b1 = parseInt(prevBot.charAt(1)); 
+
+                if(isNaN(t0) || isNaN(t1) || isNaN(t2) || isNaN(b0) || isNaN(b1)) {
+                    return ["XX", "XX", "XX", "XX", "XX"];
+                }
+
+                // V.2 Formulas (Strictly Maintained)
+                const p1 = `${(t0 + b1 + 7) % 10}${(b0 + 3) % 10}`;
+                const p2 = `${((t1 * 2) + 1) % 10}${(t2 + b0 + 4) % 10}`;
+                const sumTop = t0 + t1 + t2;
+                const sumBot = b0 + b1;
+                const p3 = `${(sumTop + 9) % 10}${(sumBot + 2) % 10}`;
+                const p4 = `${(t2 + b1 + 5) % 10}${(t0 + b0 + 8) % 10}`;
+                const p5 = `${(t1 + b1 + 1) % 10}${(b0 * 3) % 10}`;
+
+                return [p1, p2, p3, p4, p5];
+            } catch (e) {
+                return ["XX", "XX", "XX", "XX", "XX"];
+            }
+        }
+
+        // --- 4. Helper Functions ---
+
+        function updateUI(prediction, dateRef) {
+            const container = document.getElementById('result-container');
+            const display = document.getElementById('display-numbers');
+            const dateLabel = document.getElementById('date-ref');
+
+            // Generate HTML spans
+            display.innerHTML = prediction.map(num => 
+                `<span class="bg-white px-2 py-1 rounded shadow-sm border border-blue-100">${num}</span>`
+            ).join('');
+
+            dateLabel.innerText = `จากงวด: ${dateRef}`;
+            
+            // Remove blur and opacity
+            container.classList.remove('opacity-50', 'blur-[1px]', 'filter');
+        }
+
+        function copyToClipboard(text) {
+            // Create temporary textarea to handle copy
+            const tempInput = document.createElement("textarea");
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                document.execCommand("copy");
+                showToast("คัดลอกเรียบร้อย! พร้อมวาง");
+            } catch (err) {
+                showToast("คัดลอกไม่สำเร็จ", true);
+            }
+            
+            document.body.removeChild(tempInput);
+        }
+
+        function manualCopy() {
+            if(currentResultString) {
+                copyToClipboard(currentResultString);
+            }
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.innerHTML = isError 
+                ? `<i class="fa-solid fa-circle-exclamation text-red-300"></i> <span class="font-bold">${message}</span>`
+                : `<i class="fa-solid fa-circle-check text-green-300"></i> <span class="font-bold">${message}</span>`;
+            
+            toast.style.backgroundColor = isError ? '#991b1b' : '#065f46';
+            
+            toast.classList.remove('hide');
+            toast.classList.add('show');
+
+            // Hide after 2 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.classList.add('hide');
+            }, 2500);
+        }
+
+        function clearAll() {
+            document.getElementById('raw-input').value = '';
+            document.getElementById('raw-input').focus();
+            document.getElementById('display-numbers').innerHTML = '<span>--</span> <span>--</span> <span>--</span> <span>--</span> <span>--</span>';
+            document.getElementById('date-ref').innerText = 'รอข้อมูล...';
+            document.getElementById('result-container').classList.add('opacity-50', 'blur-[1px]', 'filter');
+            currentResultString = "";
+        }
+    </script>
+</body>
+</html>
+

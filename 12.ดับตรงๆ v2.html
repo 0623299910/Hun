@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สูตรดับล่าง V.3 (Quick Mode)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        .tab-btn.active {
+            background-color: #7e22ce; /* purple-700 */
+            color: white;
+            border-bottom: 3px solid #581c87;
+        }
+        .tab-btn {
+            background-color: #f3f4f6;
+            color: #4b5563;
+        }
+        
+        /* CSS สำหรับ Excel */
+        .excel-text { mso-number-format: "\@"; }
+        
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Balls for V.3 style */
+        .lottery-ball {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 100;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 17px;
+            opacity: 0;
+            transition: opacity 0.5s, bottom 0.5s;
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-2 md:p-6 text-gray-800">
+
+    <div class="max-w-5xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
+        
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-800 to-indigo-900 p-6 text-white flex justify-between items-center flex-wrap gap-4 shadow-md">
+            <div>
+                <h1 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-yellow-400"></i> สูตรดับล่าง V.3 (Quick Mode)
+                </h1>
+                <p class="text-purple-200 text-sm mt-1">Logic: ระยะห่าง & ผลคูณ • รองรับการกด Enter เพื่อคำนวณทันที</p>
+            </div>
+            <div class="text-right">
+                <span class="bg-white/10 py-1 px-4 rounded-lg text-sm text-purple-100 border border-white/20 backdrop-blur-sm">
+                    ฐานข้อมูล: <span id="data-count" class="font-bold text-white text-lg">0</span> งวด
+                </span>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-200 overflow-x-auto tab-container sticky top-0 bg-white z-10 shadow-sm">
+            <button onclick="switchTab('input')" id="tab-input" class="tab-btn active w-1/2 py-4 px-2 font-bold text-center transition duration-200 border-r border-gray-200 flex justify-center items-center gap-2">
+                <i class="fa-solid fa-pen-to-square"></i> นำเข้าข้อมูล
+            </button>
+            <button onclick="switchTab('summary')" id="tab-summary" class="tab-btn w-1/2 py-4 px-2 font-bold text-center transition duration-200 bg-orange-50 text-orange-900 flex justify-center items-center gap-2">
+                <i class="fa-solid fa-chart-pie"></i> สรุปผล & Copy
+            </button>
+        </div>
+
+        <div class="p-4 md:p-6 bg-white min-h-[500px]">
+
+            <!-- INPUT SECTION -->
+            <div id="content-input" class="block animate-fade-in">
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-blue-700">🚀 วิธีใช้งาน Quick Mode</p>
+                        <p class="text-sm text-blue-600">วางข้อมูลจาก Excel แล้วกดปุ่ม <kbd class="bg-white border border-gray-300 rounded px-1 font-mono text-xs text-gray-700 shadow-sm">Enter</kbd> ที่คีย์บอร์ด ระบบจะคำนวณและ Copy ให้ทันที</p>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2">
+                        <textarea id="raw-input" rows="12" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 font-mono text-sm bg-gray-50" placeholder="ตัวอย่างข้อมูลจาก Excel:&#10;2026-01-01	'860	'00&#10;2026-01-16	'564	'25"></textarea>
+                    </div>
+                    <div class="space-y-4">
+                        <button onclick="processData()" class="w-full bg-purple-700 hover:bg-purple-800 text-white py-4 px-6 rounded-lg font-bold shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-rocket"></i> คำนวณ (หรือกด Enter)
+                        </button>
+                        <button onclick="clearData()" class="w-full bg-white text-red-600 border border-red-200 hover:bg-red-50 py-3 px-6 rounded-lg font-bold transition">
+                            <i class="fa-solid fa-trash-can"></i> ล้างค่า
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUMMARY SECTION -->
+            <div id="content-summary" class="hidden animate-fade-in">
+                
+                <!-- Highlight Box: Horizontal Result -->
+                <div class="bg-orange-50 border-2 border-orange-300 rounded-xl p-4 md:p-6 shadow-md mb-8">
+                    
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-orange-800 mb-1 flex items-center gap-2">
+                                <i class="fa-solid fa-table-columns"></i> ผลลัพธ์แนวนอน (5 คู่ดับ)
+                            </h2>
+                            <p class="text-orange-700 text-sm">ประจำงวดวันที่: <span id="next-date-label" class="font-bold">--/--/--</span></p>
+                        </div>
+                    </div>
+
+                    <!-- The Table Display (Preview) -->
+                    <div class="overflow-x-auto bg-white rounded-lg border border-orange-200 shadow-sm mb-6">
+                        <table class="w-full text-center">
+                            <thead class="bg-orange-100 text-orange-900 text-xs uppercase font-bold">
+                                <tr>
+                                    <th class="px-2 py-3 border-r border-orange-200">คู่ที่ 1</th>
+                                    <th class="px-2 py-3 border-r border-orange-200">คู่ที่ 2</th>
+                                    <th class="px-2 py-3 border-r border-orange-200">คู่ที่ 3</th>
+                                    <th class="px-2 py-3 border-r border-orange-200">คู่ที่ 4</th>
+                                    <th class="px-2 py-3">คู่ที่ 5</th>
+                                </tr>
+                            </thead>
+                            <tbody id="horizontal-row">
+                                <tr><td colspan="5" class="py-6 text-gray-400 italic">รอการคำนวณ...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- BUTTONS GROUP -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- ปุ่มสำหรับ GoodNotes -->
+                        <button onclick="copyForGoodNotes()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-4 rounded-lg shadow-lg font-bold text-lg transition transform active:scale-95 flex items-center justify-center gap-3 border-b-4 border-blue-800">
+                            <i class="fa-solid fa-file-pen"></i> 
+                            <div class="text-left">
+                                <div class="text-sm font-normal opacity-90">สำหรับ GoodNotes / Line</div>
+                                <div>Copy แนวนอน (ข้อความ)</div>
+                            </div>
+                        </button>
+
+                        <!-- ปุ่มสำหรับ Excel -->
+                        <button onclick="copyForExcel()" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-4 rounded-lg shadow-lg font-bold text-lg transition transform active:scale-95 flex items-center justify-center gap-3 border-b-4 border-green-800">
+                            <i class="fa-solid fa-file-excel"></i>
+                            <div class="text-left">
+                                <div class="text-sm font-normal opacity-90">สำหรับ Excel</div>
+                                <div>Copy แนวนอน (ตาราง)</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Dashboard -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm text-center">
+                        <p class="text-xs text-gray-500">ความแม่นยำ</p>
+                        <p id="accuracy-display" class="text-3xl font-bold text-blue-600">0%</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm text-center">
+                        <p class="text-xs text-gray-500">ผ่าน (งวด)</p>
+                        <p id="pass-count" class="text-3xl font-bold text-green-600">0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm text-center col-span-2 md:col-span-1">
+                        <p class="text-xs text-gray-500">หลุด (งวด)</p>
+                        <p id="fail-count" class="text-3xl font-bold text-red-600">0</p>
+                    </div>
+                </div>
+
+                <!-- Vertical Detail List -->
+                <div>
+                    <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-list-ol"></i> สถิติย้อนหลัง (แนวตั้ง)
+                    </h3>
+                    <div class="overflow-x-auto rounded-lg border border-gray-200 custom-scroll" style="max-height: 500px;">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-100 text-gray-700 text-xs uppercase font-bold sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-4 py-3">งวดวันที่</th>
+                                    <th class="px-4 py-3 text-center">ผลออก</th>
+                                    <th class="px-4 py-3 text-center w-1/2">เลขดับ 5 คู่ (V.3)</th>
+                                    <th class="px-4 py-3 text-center">สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-tbody" class="bg-white divide-y divide-gray-100">
+                                <tr><td colspan="4" class="text-center py-6 text-gray-400">ไม่มีข้อมูล</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast">คัดลอกเรียบร้อย! พร้อมวางใน GoodNotes</div>
+
+    <script>
+        let globalData = [];
+        let nextPrediction = []; // Store the next 5 pairs
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('[id^="content-"]').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('content-' + tabName).classList.remove('hidden');
+            const tab = document.getElementById('tab-' + tabName);
+            if(tab) tab.classList.add('active');
+        }
+
+        function clearData() {
+            document.getElementById('raw-input').value = '';
+            globalData = [];
+            nextPrediction = [];
+            document.getElementById('data-count').innerText = '0';
+            document.getElementById('horizontal-row').innerHTML = '<tr><td colspan="5" class="py-6 text-gray-400 italic">รอการคำนวณ...</td></tr>';
+            document.getElementById('history-tbody').innerHTML = '<tr><td colspan="4" class="text-center py-6 text-gray-400">ไม่มีข้อมูล</td></tr>';
+            document.getElementById('accuracy-display').innerText = '0%';
+            document.getElementById('pass-count').innerText = '0';
+            document.getElementById('fail-count').innerText = '0';
+            document.getElementById('next-date-label').innerText = '--/--/--';
+            showToast("ล้างข้อมูลเรียบร้อย");
+        }
+
+        // --- Logic V.3 (สูตรระยะห่าง & ผลคูณ) ---
+        function calculateDeadPairsV3(prevTop, prevBot) {
+            try {
+                const t0 = parseInt(prevTop.charAt(0)); 
+                const t1 = parseInt(prevTop.charAt(1)); 
+                const t2 = parseInt(prevTop.charAt(2)); 
+                const b0 = parseInt(prevBot.charAt(0)); 
+                const b1 = parseInt(prevBot.charAt(1)); 
+
+                if(isNaN(t0) || isNaN(t1) || isNaN(t2) || isNaN(b0) || isNaN(b1)) return ["XX", "XX", "XX", "XX", "XX"];
+
+                // 5 สูตรลับ V.3
+                const p1 = `${Math.abs(t0 - b1) % 10}${Math.abs(t2 - b0) % 10}`;
+                const p2 = `${(t1 * t1) % 10}${(b1 * b1) % 10}`;
+                const p3 = `${(t0 * b0) % 10}${(t2 * b1) % 10}`;
+                const sumAll = t0 + t1 + t2 + b0 + b1;
+                const p4 = `${(sumAll - 2 + 10) % 10}${(sumAll - 5 + 10) % 10}`;
+                const p5 = `${(t1 + b0 + 2) % 10}${(t1 + b1 + 4) % 10}`;
+
+                return [p1, p2, p3, p4, p5];
+            } catch (e) {
+                return ["XX", "XX", "XX", "XX", "XX"];
+            }
+        }
+
+        function processData(autoCopy = false) {
+            const rawText = document.getElementById('raw-input').value;
+            const lines = rawText.split('\n');
+            const data = [];
+            
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) return;
+                const parts = trimmedLine.split(/\s+/);
+
+                if (parts.length >= 3) {
+                    const date = parts[0];
+                    const top = parts[1].replace(/'/g, '').replace(/\D/g, ''); // Clean inputs
+                    const bot = parts[2].replace(/'/g, '').replace(/\D/g, '');
+
+                    if (top.length === 3 && bot.length === 2) {
+                        data.push({ date: date, top3: top, bot2: bot });
+                    }
+                }
+            });
+
+            if (data.length < 2) {
+                if(!autoCopy) alert("ต้องการข้อมูลอย่างน้อย 2 งวดเพื่อคำนวณครับ");
+                return false;
+            }
+
+            globalData = data;
+            document.getElementById('data-count').innerText = globalData.length;
+
+            let passedRounds = 0;
+            let totalAnalyzed = 0;
+            let historyHtml = "";
+
+            // Calculate History
+            // Loop from 2nd row to the last known row
+            for (let i = 1; i < data.length; i++) {
+                const prev = data[i-1];
+                const current = data[i];
+                
+                const prediction = calculateDeadPairsV3(prev.top3, prev.bot2);
+                const actual = current.bot2;
+
+                const isHit = prediction.includes(actual); // Hit = Fail (ดับไม่อยู่)
+                if (!isHit) passedRounds++;
+                totalAnalyzed++;
+
+                const statusClass = isHit ? 'text-red-600 font-bold' : 'text-green-600 font-bold';
+                const statusText = isHit ? 'หลุด ❌' : 'ผ่าน ✅';
+                
+                // Highlight Matching Pair
+                const pairsHtml = prediction.map(p => 
+                    (isHit && p === actual) 
+                    ? `<span class="inline-block bg-red-500 text-white px-2 py-0.5 rounded font-bold">${p}</span>` 
+                    : `<span class="text-gray-500 font-mono mx-1">${p}</span>`
+                ).join('');
+
+                historyHtml = `<tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${current.date}</td>
+                        <td class="px-4 py-3 text-center font-bold text-lg text-slate-800 excel-text">${actual}</td>
+                        <td class="px-4 py-3 text-center">${pairsHtml}</td>
+                        <td class="px-4 py-3 text-center ${statusClass}">${statusText}</td>
+                    </tr>` + historyHtml; // Prepend for descending order
+            }
+
+            // Calculate NEXT Round (The Future)
+            const lastData = data[data.length - 1];
+            nextPrediction = calculateDeadPairsV3(lastData.top3, lastData.bot2);
+            document.getElementById('next-date-label').innerText = `จากงวด ${lastData.date}`;
+
+            // Render Horizontal Table (For Next Round)
+            let hRow = "<tr>";
+            nextPrediction.forEach(pair => {
+                hRow += `<td class="px-2 py-4 text-3xl font-bold text-slate-800 border-r border-orange-200 bg-white excel-text tracking-widest">${pair}</td>`;
+            });
+            hRow += "</tr>";
+
+            // Update DOM
+            document.getElementById('horizontal-row').innerHTML = hRow;
+            document.getElementById('history-tbody').innerHTML = historyHtml;
+            
+            // Stats
+            const accuracy = totalAnalyzed > 0 ? ((passedRounds / totalAnalyzed) * 100).toFixed(1) : 0;
+            document.getElementById('accuracy-display').innerText = `${accuracy}%`;
+            document.getElementById('pass-count').innerText = passedRounds;
+            document.getElementById('fail-count').innerText = (totalAnalyzed - passedRounds);
+
+            switchTab('summary');
+            return true;
+        }
+
+        // --- Quick Mode Listener (Enter Key) ---
+        document.getElementById('raw-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Stop new line
+                const success = processData(true); // Run logic
+                
+                if (success) {
+                    // Small delay to let tab switch visually, then copy
+                    setTimeout(() => {
+                        copyForGoodNotes(true); // True = from quick mode (no alert box, uses Toast)
+                    }, 200);
+                }
+            }
+        });
+
+        // --- Toast Logic ---
+        function showToast(message) {
+            const x = document.getElementById("toast");
+            x.innerText = message;
+            x.className = "show";
+            setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+        }
+
+        // --- Copy Logic: GoodNotes (Plain Text) ---
+        function copyForGoodNotes(isQuickMode = false) {
+            if (nextPrediction.length === 0) { 
+                if(!isQuickMode) alert("กรุณาคำนวณก่อนครับ"); 
+                return; 
+            }
+            
+            // Join with large spaces for separation
+            const textData = nextPrediction.join("      ");
+            
+            navigator.clipboard.writeText(textData).then(() => {
+                if (isQuickMode) {
+                    showToast("✅ Copy เรียบร้อย! (พร้อมวางใน GoodNotes)");
+                } else {
+                    alert("ก๊อปปี้แนวนอนเรียบร้อย! (ข้อความ)\nไปวางใน GoodNotes ได้เลยครับ");
+                }
+            }).catch(err => {
+                fallbackCopy(textData);
+            });
+        }
+
+        // --- Copy Logic: Excel (Table/Tab) ---
+        function copyForExcel() {
+            if (nextPrediction.length === 0) { alert("กรุณาคำนวณก่อนครับ"); return; }
+            
+            // Tab Separated for plain paste, HTML Table for formatting
+            const textData = nextPrediction.join("\t");
+            const htmlData = `<table><tr>${nextPrediction.map(p => `<td style="mso-number-format:'\@'">${p}</td>`).join('')}</tr></table>`;
+
+            const clipboardItem = new ClipboardItem({
+                "text/plain": new Blob([textData], { type: "text/plain" }),
+                "text/html": new Blob([htmlData], { type: "text/html" })
+            });
+
+            navigator.clipboard.write([clipboardItem]).then(() => {
+                showToast("✅ Copy สำหรับ Excel เรียบร้อย!");
+            }).catch(err => {
+                alert("Browser นี้ไม่รองรับการก๊อปปี้ขั้นสูง กรุณาใช้ PC");
+            });
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+            showToast("✅ Copy เรียบร้อย (Fallback)");
+        }
+
+    </script>
+</body>
+</html>
+

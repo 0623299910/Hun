@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7 เซียน: เลขตัด (แนวนอน/เฉพาะเลข)</title>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-pop {
+            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect, useRef } = React;
+
+        // --- ICONS ---
+        const Icon = ({ path, className, size = 24 }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
+
+        const Icons = {
+            Trophy: (p) => <Icon {...p} path={<><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></>} />,
+            Target: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>} />,
+            Scissors: (p) => <Icon {...p} path={<><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></>} />,
+            Copy: (p) => <Icon {...p} path={<><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></>} />,
+            Check: (p) => <Icon {...p} path={<polyline points="20 6 9 17 4 12"/>} />,
+            Trash2: (p) => <Icon {...p} path={<><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>} />,
+            PlayCircle: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></>} />,
+        };
+
+        // --- LOGIC (UNCHANGED) ---
+
+        const parseData = (rawData) => {
+            if (!rawData) return [];
+            return rawData.trim().split('\n').map(line => {
+                const parts = line.split(/\s+/);
+                if (parts.length >= 3) {
+                    return { date: parts[0], bot2: parts[2].replace(/'/g, '') };
+                }
+                return null;
+            }).filter(item => item !== null && item.bot2.length === 2 && !isNaN(item.bot2));
+        };
+
+        const getCounts = (data, limit = null) => {
+            const counts = Array(10).fill(0);
+            const sliced = limit ? data.slice(-limit) : data;
+            sliced.forEach(d => {
+                counts[parseInt(d.bot2[0])]++;
+                counts[parseInt(d.bot2[1])]++;
+            });
+            return counts.map((c, i) => ({ digit: i, count: c })).sort((a, b) => b.count - a.count);
+        };
+
+        const checkWin = (drawBot2, predictedDigits) => {
+            const d1 = parseInt(drawBot2[0]);
+            const d2 = parseInt(drawBot2[1]);
+            return predictedDigits.includes(d1) || predictedDigits.includes(d2);
+        };
+
+        const getMissingDigits = (sevenDigits) => {
+            const all = [0,1,2,3,4,5,6,7,8,9];
+            return all.filter(d => !sevenDigits.includes(d));
+        };
+
+        const createFormula = (name, desc, logicFn) => ({ name, desc, logicFn });
+        const f_velocity = (data) => getCounts(data, 10).slice(0, 7).map(x => x.digit);
+        const f_standard = (data) => getCounts(data).slice(0, 7).map(x => x.digit);
+        const f_tens = (data) => {
+            const counts = Array(10).fill(0);
+            const slice = data.length > 20 ? data.slice(-20) : data;
+            slice.forEach(d => counts[parseInt(d.bot2[0])]++);
+            return counts.map((c, i) => ({d:i, c})).sort((a,b) => b.c - a.c).slice(0, 7).map(x => x.d);
+        };
+        const f_units = (data) => {
+            const counts = Array(10).fill(0);
+            const slice = data.length > 20 ? data.slice(-20) : data;
+            slice.forEach(d => counts[parseInt(d.bot2[1])]++);
+            return counts.map((c, i) => ({d:i, c})).sort((a,b) => b.c - a.c).slice(0, 7).map(x => x.d);
+        };
+        const f_day = (data) => {
+            if (data.length === 0) return [];
+            const lastDate = new Date(data[data.length-1].date);
+            const dayIndex = lastDate.getDay(); 
+            const filtered = data.filter(d => new Date(d.date).getDay() === dayIndex);
+            return getCounts(filtered).slice(0, 7).map(x => x.digit);
+        };
+        const f_follower = (data) => {
+            if (data.length < 2) return [0,1,2,3,4,5,6];
+            const prev = data[data.length - 1].bot2;
+            const history = data.slice(0, -1);
+            const counts = Array(10).fill(0);
+            const p1 = parseInt(prev[0]);
+            const p2 = parseInt(prev[1]);
+            history.forEach((h, i) => {
+                if (i < history.length - 1) {
+                    const current = h.bot2;
+                    const c1 = parseInt(current[0]);
+                    const c2 = parseInt(current[1]);
+                    if (c1 === p1 || c1 === p2 || c2 === p1 || c2 === p2) {
+                        const nextDraw = history[i+1];
+                        counts[parseInt(nextDraw.bot2[0])]++;
+                        counts[parseInt(nextDraw.bot2[1])]++;
+                    }
+                }
+            });
+            return counts.map((c, i) => ({d:i, c})).sort((a,b) => b.c - a.c).slice(0, 7).map(x => x.d);
+        };
+        const f_loop = (data) => {
+            const counts = Array(10).fill(0);
+            if (data.length > 15) {
+                data.slice(-15, -2).forEach(d => {
+                    counts[parseInt(d.bot2[0])]++;
+                    counts[parseInt(d.bot2[1])]++;
+                });
+            } else {
+                return f_standard(data);
+            }
+            return counts.map((c, i) => ({d:i, c})).sort((a,b) => b.c - a.c).slice(0, 7).map(x => x.d);
+        };
+
+        const calculateAccuracy = (data, logicFn, drawsToCheck = 10) => {
+            let hits = 0;
+            const history = [];
+            const actualDrawsToCheck = Math.min(drawsToCheck, Math.floor(data.length / 2));
+            for (let i = 0; i < actualDrawsToCheck; i++) {
+                const targetIndex = data.length - 1 - i; 
+                const knownData = data.slice(0, targetIndex); 
+                const targetDraw = data[targetIndex]; 
+                const predicted = logicFn(knownData);
+                const isWin = checkWin(targetDraw.bot2, predicted);
+                if (isWin) hits++;
+                history.push({ date: targetDraw.date, actual: targetDraw.bot2, predicted, win: isWin });
+            }
+            return { score: hits, total: actualDrawsToCheck, history };
+        };
+
+        // --- COMPONENTS ---
+
+        const Toast = ({ message, show }) => (
+            <div className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-300 z-50 ${show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
+                <Icons.Check className="text-emerald-400" />
+                <span className="font-semibold">{message}</span>
+            </div>
+        );
+
+        const FormulaCard = ({ name, digits, missingDigits, performance }) => (
+            <div className="relative p-5 rounded-2xl bg-white border border-slate-200 shadow-sm animate-fade-in hover:shadow-md transition-shadow">
+                <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-950 px-3 py-1 rounded-bl-xl rounded-tr-xl text-xs font-bold shadow-sm flex items-center gap-1">
+                    <Icons.Trophy size={12} />
+                    เต็ม 10/10
+                </div>
+                
+                <h3 className="font-bold text-slate-800 text-lg mb-2">{name}</h3>
+
+                <div className="flex flex-col md:flex-row gap-4 items-center">
+                    {/* CUT 3 */}
+                    <div className="flex-1 w-full bg-red-50 rounded-xl p-3 border border-red-100 flex items-center justify-between">
+                        <div className="text-xs font-bold text-red-400 uppercase flex items-center gap-1">
+                            <Icons.Scissors size={14} />
+                            ตัดออก
+                        </div>
+                        <div className="flex gap-4">
+                            {missingDigits.map((d, i) => (
+                                <span key={i} className="text-2xl font-black text-red-600">
+                                    {d}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        function App() {
+            const [view, setView] = useState('input');
+            const [rawData, setRawData] = useState('');
+            const [parsedData, setParsedData] = useState([]);
+            const [toast, setToast] = useState({ show: false, msg: '' });
+            const textareaRef = useRef(null);
+
+            // Analysis & Formula Logic
+            const perfectFormulas = useMemo(() => {
+                if (parsedData.length === 0) return [];
+                
+                const list = [
+                    createFormula("สูตร 1: กระแสปัจจุบัน", "เน้นเลขที่กำลังพุ่งแรง", f_velocity),
+                    createFormula("สูตร 2: เจ้าสถิติ", "สถิติมาตรฐานตลอดกาล", f_standard),
+                    createFormula("สูตร 3: เซียนหลักสิบ", "เจาะเฉพาะหลักสิบ", f_tens),
+                    createFormula("สูตร 4: เซียนหลักหน่วย", "เจาะเฉพาะหลักหน่วย", f_units),
+                    createFormula("สูตร 5: ตามวัน", "เลขที่มักมาในวันเดียวกัน", f_day),
+                    createFormula("สูตร 6: เลขตาม", "งวดที่แล้วออกเลขนี้ งวดนี้...", f_follower),
+                    createFormula("สูตร 7: จังหวะรอบ", "เลขที่เว้นช่วงไปพักหนึ่ง", f_loop),
+                ];
+
+                return list.map(f => {
+                    const currentDigits = f.logicFn(parsedData).sort((a, b) => a - b);
+                    const perf = calculateAccuracy(parsedData, f.logicFn, 10);
+                    const missing = getMissingDigits(currentDigits).sort((a,b) => a-b);
+                    return { ...f, digits: currentDigits, missingDigits: missing, performance: perf };
+                }).filter(f => f.performance.score === f.performance.total && f.performance.total > 0);
+            }, [parsedData]);
+
+            const handleImport = () => {
+                const data = parseData(rawData);
+                if (data.length < 15) {
+                    alert("ขอข้อมูลอย่างน้อย 15 งวด เพื่อความแม่นยำ");
+                    return;
+                }
+                setParsedData(data);
+                setView('result');
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); 
+                    handleImport();
+                }
+            };
+
+            // AUTO COPY: NUMBERS ONLY, HORIZONTAL
+            useEffect(() => {
+                if (view === 'result' && perfectFormulas.length > 0) {
+                    // Create string: "0 5 9      1 4 8"
+                    const textToCopy = perfectFormulas.map(f => {
+                        return f.missingDigits.join('   '); // Space between digits
+                    }).join('      '); // Wider space between formulas
+                    
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        setToast({ show: true, msg: 'ก๊อปปี้: เฉพาะเลข (แนวนอน)' });
+                        setTimeout(() => setToast({ show: false, msg: '' }), 3000);
+                    }).catch(err => {
+                        console.error('Copy failed', err);
+                        setToast({ show: true, msg: 'Auto-copy failed. Please copy manually.' });
+                    });
+                }
+            }, [view, perfectFormulas]);
+
+            const handleClear = () => {
+                setRawData('');
+                setParsedData([]);
+                setView('input');
+                setTimeout(() => textareaRef.current?.focus(), 100);
+            };
+
+            return (
+                <div className="min-h-screen pb-12">
+                    <Toast message={toast.msg} show={toast.show} />
+
+                    {/* HEADER */}
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 py-3 shadow-sm flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <div className="bg-indigo-600 text-white p-2 rounded-lg">
+                                <Icons.Target size={20} />
+                            </div>
+                            <div>
+                                <h1 className="font-bold text-slate-800 leading-tight">7 เซียน <span className="text-indigo-600">Auto Cut</span></h1>
+                                <p className="text-[10px] text-slate-400">โหมด: เฉพาะตัวเลขแนวนอน</p>
+                            </div>
+                        </div>
+                        {view === 'result' && (
+                            <button onClick={handleClear} className="bg-slate-100 text-slate-600 p-2 rounded-full hover:bg-red-50 hover:text-red-600 transition-colors">
+                                <Icons.Trash2 size={20} />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* INPUT VIEW */}
+                    {view === 'input' && (
+                        <div className="max-w-md mx-auto p-4 animate-fade-in">
+                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mt-4">
+                                <label className="block text-sm font-bold text-slate-700 mb-2">วางสถิติหวยที่นี่ (กด Enter เพื่อคำนวณ)</label>
+                                <textarea 
+                                    ref={textareaRef}
+                                    className="w-full h-48 p-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none mb-3"
+                                    placeholder="YYYY-MM-DD 'XXX 'XX"
+                                    value={rawData}
+                                    onChange={(e) => setRawData(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                />
+                                <button 
+                                    onClick={handleImport}
+                                    disabled={!rawData}
+                                    className={`w-full py-3 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 ${!rawData ? 'bg-slate-200 text-slate-400' : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg'}`}
+                                >
+                                    <Icons.PlayCircle size={20} />
+                                    วิเคราะห์ & ก๊อปปี้
+                                </button>
+                                <p className="text-xs text-center text-slate-400 mt-3">
+                                    *ระบบจะคัดเฉพาะตัวเลข (แนวนอน) ลงในคลิปบอร์ด
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* RESULT VIEW */}
+                    {view === 'result' && (
+                        <div className="max-w-md mx-auto p-4 animate-fade-in">
+                            {perfectFormulas.length > 0 ? (
+                                <>
+                                    <div className="bg-green-100 text-green-800 p-3 rounded-xl mb-4 text-sm font-medium flex items-center gap-2 animate-pop border border-green-200">
+                                        <Icons.Check size={18} />
+                                        ค้นพบ {perfectFormulas.length} สูตร (ก๊อปปี้เลขเรียบร้อย)
+                                    </div>
+                                    
+                                    {/* Preview of what was copied */}
+                                    <div className="bg-slate-800 text-white p-4 rounded-xl mb-6 shadow-inner font-mono text-center text-lg tracking-widest">
+                                        {perfectFormulas.map(f => f.missingDigits.join('   ')).join('      ')}
+                                        <div className="text-[10px] text-slate-400 mt-2 font-sans tracking-normal opacity-70">(นี่คือข้อความที่ก๊อปปี้ไปแล้ว)</div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        {perfectFormulas.map((f, i) => (
+                                            <FormulaCard key={i} {...f} />
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-center py-10 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                                    <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Icons.Target className="text-slate-400" size={32} />
+                                    </div>
+                                    <h3 className="font-bold text-slate-600">ไม่พบสูตร 10/10</h3>
+                                    <p className="text-slate-400 text-sm mt-1 px-6">ไม่มีสูตรไหนเข้าเป้า 100% ใน 10 งวดล่าสุด</p>
+                                    <button onClick={handleClear} className="mt-4 text-indigo-600 text-sm font-bold">ลองใหม่</button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

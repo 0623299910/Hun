@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สุ่มหวยหุ้น PRO</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Segoe UI;
+background:linear-gradient(135deg,#7b0000,#d32f2f);
+color:white;
+}
+
+header{
+text-align:center;
+font-size:24px;
+font-weight:bold;
+padding:20px;
+}
+
+.container{
+padding:15px;
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+gap:15px;
+}
+
+.card{
+background:white;
+color:#333;
+border-radius:14px;
+padding:15px;
+box-shadow:0 6px 15px rgba(0,0,0,0.2);
+position:relative;
+overflow:hidden;
+}
+
+.stock{
+display:flex;
+align-items:center;
+gap:10px;
+font-weight:bold;
+font-size:18px;
+}
+
+.flag{
+font-size:22px;
+}
+
+.time{
+font-size:12px;
+color:gray;
+margin-top:4px;
+}
+
+.result{
+display:flex;
+justify-content:space-between;
+margin-top:15px;
+}
+
+.number{
+font-size:28px;
+font-weight:bold;
+color:#d32f2f;
+}
+
+.label{
+font-size:12px;
+color:#777;
+}
+
+.spin{
+animation:spin 0.4s;
+}
+
+@keyframes spin{
+0%{transform:scale(0.5);opacity:0}
+100%{transform:scale(1);opacity:1}
+}
+
+.random-btn{
+margin-top:12px;
+padding:6px 12px;
+border:none;
+background:#ff9800;
+color:white;
+border-radius:6px;
+cursor:pointer;
+font-size:12px;
+}
+
+.main-btn{
+width:90%;
+max-width:400px;
+display:block;
+margin:20px auto;
+padding:15px;
+font-size:18px;
+background:#ffd600;
+border:none;
+border-radius:10px;
+font-weight:bold;
+cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>🎲 สุ่มเลขหวยหุ้นต่างประเทศ PRO</header>
+
+<div class="container" id="stocks"></div>
+
+<button class="main-btn" onclick="randomAll()">สุ่มเลขทั้งหมด</button>
+
+<script>
+
+const stocks=[
+
+{name:"ดาวโจนส์",time:"03:20",flag:"🇺🇸"},
+{name:"นิเคอิเช้า",time:"09:30",flag:"🇯🇵"},
+{name:"จีนเช้า",time:"10:30",flag:"🇨🇳"},
+{name:"ฮั่งเส็งเช้า",time:"11:00",flag:"🇭🇰"},
+{name:"ไต้หวัน",time:"12:35",flag:"🇹🇼"},
+{name:"นิเคอิบ่าย",time:"13:00",flag:"🇯🇵"},
+{name:"เกาหลี",time:"13:35",flag:"🇰🇷"},
+{name:"จีนบ่าย",time:"14:00",flag:"🇨🇳"},
+{name:"ฮั่งเส็งบ่าย",time:"15:00",flag:"🇭🇰"},
+{name:"สิงคโปร์",time:"16:30",flag:"🇸🇬"},
+{name:"ไทยเย็น",time:"16:40",flag:"🇹🇭"},
+{name:"อินเดีย",time:"17:30",flag:"🇮🇳"},
+{name:"อียิปต์",time:"18:00",flag:"🇪🇬"},
+{name:"ฮานอย",time:"18:30",flag:"🇻🇳"},
+{name:"รัสเซีย",time:"19:00",flag:"🇷🇺"},
+{name:"เยอรมัน",time:"20:00",flag:"🇩🇪"},
+{name:"อังกฤษ",time:"21:00",flag:"🇬🇧"}
+
+];
+
+const container=document.getElementById("stocks");
+
+stocks.forEach((s,i)=>{
+
+container.innerHTML+=`
+
+<div class="card">
+
+<div class="stock">
+<span class="flag">${s.flag}</span>
+${s.name}
+</div>
+
+<div class="time">เวลา ${s.time}</div>
+
+<div class="result">
+
+<div>
+<div class="label">3 ตัวบน</div>
+<div class="number top">000</div>
+</div>
+
+<div>
+<div class="label">2 ตัวล่าง</div>
+<div class="number bottom">00</div>
+</div>
+
+</div>
+
+<button class="random-btn" onclick="randomOne(this)">สุ่ม</button>
+
+</div>
+
+`
+
+});
+
+function r3(){
+return Math.floor(Math.random()*1000).toString().padStart(3,'0')
+}
+
+function r2(){
+return Math.floor(Math.random()*100).toString().padStart(2,'0')
+}
+
+function animate(el){
+el.classList.remove("spin")
+void el.offsetWidth
+el.classList.add("spin")
+}
+
+function randomOne(btn){
+
+let card=btn.parentElement
+let top=card.querySelector(".top")
+let bottom=card.querySelector(".bottom")
+
+top.innerText=r3()
+bottom.innerText=r2()
+
+animate(top)
+animate(bottom)
+
+}
+
+function randomAll(){
+
+document.querySelectorAll(".card").forEach(card=>{
+
+let top=card.querySelector(".top")
+let bottom=card.querySelector(".bottom")
+
+top.innerText=r3()
+bottom.innerText=r2()
+
+animate(top)
+animate(bottom)
+
+})
+
+}
+
+randomAll()
+
+</script>
+
+</body>
+</html>

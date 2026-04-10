@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมวิเคราะห์สถิติหวย (รองรับ Data Feed)</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- Icons ---
+        const Icon = ({ name, className }) => {
+            const icons = {
+                upload: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>,
+                trash: <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>,
+                play: <path d="M5 3l14 9-14 9V3z"/>,
+                refresh: <path d="M23 4v6h-6M1 20v-6h6M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>,
+                check: <path d="M20 6L9 17l-5-5"/>,
+                chart: <path d="M18 20V10M12 20V4M6 20v-6"/>,
+                list: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>,
+                grid: <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>,
+                lightning: <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            };
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        const App = () => {
+            const [view, setView] = useState('input');
+            const [inputText, setInputText] = useState('');
+            const [stats, setStats] = useState(null);
+            const [activeTab, setActiveTab] = useState('tens');
+
+            // --- Logic: Parse & Analyze ---
+            const handleAnalyze = () => {
+                if (!inputText.trim()) return;
+
+                const lines = inputText.trim().split('\n');
+                const validData = [];
+                
+                // Parse Data
+                lines.forEach((line, index) => {
+                    const parts = line.trim().split(/\s+/);
+                    if (parts.length >= 2) {
+                        // Extract last part (assumed to be bottom number)
+                        const rawBottom = parts[parts.length - 1];
+                        // *** Strip single quotes ***
+                        const bottom = rawBottom.replace(/'/g, '');
+
+                        // Validate if it is 2 digits
+                        if (/^\d{2}$/.test(bottom)) {
+                            validData.push({
+                                id: index,
+                                original: line,
+                                bottom: bottom,
+                                ten: parseInt(bottom[0]),
+                                unit: parseInt(bottom[1]),
+                                sum: (parseInt(bottom[0]) + parseInt(bottom[1])) % 10
+                            });
+                        }
+                    }
+                });
+
+                if (validData.length === 0) {
+                    alert('ไม่พบข้อมูลรูปแบบตัวเลข 2 หลักที่ถูกต้อง กรุณาตรวจสอบข้อมูล');
+                    return;
+                }
+
+                // --- Calculate Stats ---
+                const totalDraws = validData.length;
+                
+                const calcDigitStats = (keySelector) => {
+                    const res = Array.from({length: 10}, (_, i) => ({ 
+                        num: i, 
+                        count: 0, 
+                        lastIndex: -1, 
+                        gap: totalDraws 
+                    }));
+                    
+                    validData.forEach((item, idx) => {
+                        const val = keySelector(item);
+                        res[val].count++;
+                        res[val].lastIndex = idx;
+                    });
+
+                    // Recalculate Gap
+                    res.forEach(item => {
+                        if (item.lastIndex !== -1) {
+                            item.gap = (totalDraws - 1) - item.lastIndex;
+                        }
+                    });
+                    
+                    return res;
+                };
+
+                const tensStats = calcDigitStats(d => d.ten);
+                const unitsStats = calcDigitStats(d => d.unit);
+                const sumStats = calcDigitStats(d => d.sum);
+
+                // Analyze Sum Flow (Last 5 draws)
+                const last5Sums = validData.slice(-5).map(d => d.sum);
+                const sumFlow = last5Sums.map(s => s % 2 === 0 ? 'คู่' : 'คี่');
+                
+                // Missing Pairs
+                const foundPairs = new Set(validData.map(d => d.bottom));
+                const missingPairs = [];
+                for(let i=0; i<100; i++) {
+                    const pair = i.toString().padStart(2, '0');
+                    if(!foundPairs.has(pair)) missingPairs.push(pair);
+                }
+
+                setStats({
+                    totalDraws,
+                    tens: tensStats,
+                    units: unitsStats,
+                    sums: sumStats,
+                    sumFlow,
+                    last5Sums,
+                    missingPairs,
+                    rawData: validData
+                });
+                
+                setView('analysis');
+            };
+
+            const handleClear = () => {
+                if (confirm('ต้องการล้างข้อมูลและเริ่มใหม่?')) {
+                    setInputText('');
+                    setStats(null);
+                    setView('input');
+                }
+            };
+
+            const rowCount = useMemo(() => {
+                return inputText.trim().split('\n').filter(l => l.trim().length > 0).length;
+            }, [inputText]);
+
+            // --- UI Renders ---
+
+            if (view === 'input') {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4">
+                        <div className="bg-white w-full max-w-3xl rounded-3xl shadow-xl overflow-hidden fade-in">
+                            <div className="bg-indigo-600 p-6 text-white flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-white/20 rounded-xl"><Icon name="upload" className="w-6 h-6"/></div>
+                                    <div>
+                                        <h1 className="text-xl font-bold">ระบบวิเคราะห์สถิติหวย</h1>
+                                        <p className="text-indigo-200 text-sm">หลักสิบ / หลักหน่วย / แต้ม / เลขดับ</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm text-slate-600">
+                                    <span className="font-bold text-slate-800">วิธีใช้งาน:</span> วางข้อมูลได้ทั้งแบบปกติและแบบมี ' (เช่น '81) ระบบจะดึงเลข 2 ตัวท้ายมาคำนวณอัตโนมัติ
+                                </div>
+                                <textarea
+                                    value={inputText}
+                                    onChange={(e) => setInputText(e.target.value)}
+                                    placeholder={`ตัวอย่าง:\n2026-01-01\t'860\t'00\n2026-01-02\t'201\t'41`}
+                                    className="w-full h-64 p-4 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none font-mono text-sm resize-none bg-slate-50 text-slate-700 transition-all"
+                                ></textarea>
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-2 text-sm font-semibold">
+                                        {rowCount > 0 ? <span className="text-green-500 flex items-center gap-1"><Icon name="check" className="w-4 h-4"/> พร้อมคำนวณ</span> : <span className="text-slate-400">รอข้อมูล...</span>}
+                                        <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200">จำนวน: {rowCount} บรรทัด</span>
+                                    </div>
+                                    <button onClick={() => setInputText('')} disabled={!inputText} className="text-red-400 hover:text-red-600 text-sm flex items-center gap-1 transition-colors disabled:opacity-50"><Icon name="trash" className="w-4 h-4"/> ล้างข้อมูล</button>
+                                </div>
+                                <button
+                                    onClick={handleAnalyze}
+                                    disabled={rowCount === 0}
+                                    className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg transition-all transform active:scale-[0.98] ${rowCount > 0 ? 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-indigo-500/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                                >
+                                    <Icon name="play" className="w-5 h-5"/> เริ่มวิเคราะห์
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="max-w-4xl mx-auto p-4 space-y-6 slide-up pb-20">
+                    {/* Header Bar */}
+                    <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col sm:flex-row justify-between items-center border-l-4 border-slate-700 gap-4">
+                        <div>
+                            <h1 className="text-xl font-bold text-slate-800">ผลวิเคราะห์สถิติ</h1>
+                            <p className="text-slate-500 text-xs mt-1">
+                                ฐานข้อมูล: <span className="font-bold text-indigo-600">{stats.totalDraws}</span> งวดล่าสุด
+                            </p>
+                        </div>
+                        <button onClick={handleClear} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-50 text-red-600 px-5 py-2.5 rounded-xl hover:bg-red-100 transition border border-red-200 text-sm font-bold">
+                            <Icon name="refresh" className="w-4 h-4"/> เคลียร์ข้อมูล
+                        </button>
+                    </div>
+
+                    {/* Tabs Navigation */}
+                    <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                        <TabButton id="tens" label="หลักสิบ" icon="list" active={activeTab} set={setActiveTab} />
+                        <TabButton id="units" label="หลักหน่วย" icon="list" active={activeTab} set={setActiveTab} />
+                        <TabButton id="sum" label="แต้มล่าง" icon="lightning" active={activeTab} set={setActiveTab} />
+                        <TabButton id="missing" label="คู่ที่ยังไม่ออก" icon="grid" active={activeTab} set={setActiveTab} />
+                    </div>
+
+                    {/* Content Views */}
+                    <div className="fade-in">
+                        {activeTab === 'tens' && <DigitStatTable title="สถิติหลักสิบ (Tens)" data={stats.tens} color="blue" />}
+                        {activeTab === 'units' && <DigitStatTable title="สถิติหลักหน่วย (Units)" data={stats.units} color="pink" />}
+                        
+                        {activeTab === 'sum' && (
+                            <div className="space-y-6">
+                                <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl shadow-lg p-6 text-white">
+                                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Icon name="lightning" className="w-5 h-5"/> วิเคราะห์การไหลของแต้ม (5 งวดล่าสุด)</h3>
+                                    <div className="flex justify-between items-center bg-white/10 rounded-xl p-4">
+                                        {stats.last5Sums.map((sum, i) => (
+                                            <div key={i} className="flex flex-col items-center">
+                                                <div className="text-xs opacity-70 mb-1">งวดที่ {i+1}</div>
+                                                <div className="text-2xl font-black">{sum}</div>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full mt-1 ${sum % 2 === 0 ? 'bg-green-400 text-green-900' : 'bg-orange-400 text-orange-900'}`}>
+                                                    {sum % 2 === 0 ? 'คู่' : 'คี่'}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-4 text-center text-sm bg-black/20 rounded-lg p-2">
+                                        แนวโน้มปัจจุบัน: <span className="font-bold text-yellow-300">{stats.sumFlow[stats.sumFlow.length-1]}</span> (เช็คจากงวดล่าสุด)
+                                    </div>
+                                </div>
+                                <DigitStatTable title="สถิติแต้มล่าง (Sum)" data={stats.sums} color="violet" />
+                            </div>
+                        )}
+
+                        {activeTab === 'missing' && (
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                                        <Icon name="grid" className="w-5 h-5 text-red-500"/> 
+                                        คู่ที่ยังไม่เคยออก ({stats.missingPairs.length} คู่)
+                                    </h3>
+                                    <span className="text-xs text-slate-400">จากทั้งหมด {stats.totalDraws} งวด</span>
+                                </div>
+                                {stats.missingPairs.length > 0 ? (
+                                    <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-3">
+                                        {stats.missingPairs.map(pair => (
+                                            <div key={pair} className="bg-red-50 text-red-600 border border-red-100 rounded-lg py-2 text-center font-bold text-lg shadow-sm hover:scale-105 transition-transform cursor-default">
+                                                {pair}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-10 text-green-500 font-bold bg-green-50 rounded-xl border border-green-100">
+                                        <Icon name="check" className="w-8 h-8 mx-auto mb-2"/>
+                                        สุดยอด! เลขออกครบทุกคู่แล้ว 00-99
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                </div>
+            );
+        };
+
+        // --- Sub-Components ---
+        
+        const TabButton = ({ id, label, icon, active, set }) => (
+            <button 
+                onClick={() => set(id)}
+                className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all whitespace-nowrap
+                ${active === id 
+                    ? 'bg-slate-800 text-white shadow-md' 
+                    : 'text-slate-500 hover:bg-slate-50'}`}
+            >
+                <Icon name={icon} className="w-4 h-4"/> {label}
+            </button>
+        );
+
+        const DigitStatTable = ({ title, data, color }) => {
+            const getBarColor = (val, max) => {
+                const pct = (val / max) * 100;
+                if(pct > 80) return 'bg-green-500';
+                if(pct > 40) return 'bg-blue-500';
+                return 'bg-slate-300';
+            };
+            const maxCount = Math.max(...data.map(d => d.count));
+
+            return (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="p-4 bg-slate-50 border-b border-slate-100">
+                        <h3 className={`font-bold text-${color}-600 flex items-center gap-2`}>
+                            <Icon name="chart" className="w-5 h-5"/> {title}
+                        </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-center">
+                            <thead className="bg-slate-50/50 text-xs text-slate-500 uppercase">
+                                <tr>
+                                    <th className="px-4 py-3">เลข</th>
+                                    <th className="px-4 py-3 text-left w-1/2">ความถี่ (กราฟ)</th>
+                                    <th className="px-4 py-3">มาแล้ว (ครั้ง)</th>
+                                    <th className="px-4 py-3 text-red-500">หายไป (งวด)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {data.map((item) => (
+                                    <tr key={item.num} className="hover:bg-slate-50">
+                                        <td className="px-4 py-3 font-bold text-lg">{item.num}</td>
+                                        <td className="px-4 py-3 text-left">
+                                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                                <div 
+                                                    className={`h-2.5 rounded-full ${getBarColor(item.count, maxCount)}`} 
+                                                    style={{ width: `${(item.count / (maxCount || 1)) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 font-bold text-slate-700">{item.count}</td>
+                                        <td className="px-4 py-3">
+                                            {item.gap > 20 
+                                                ? <span className="bg-red-100 text-red-700 px-2 py-1 rounded font-bold">{item.gap}</span>
+                                                : <span className="text-slate-500">{item.gap}</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+

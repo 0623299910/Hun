@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมหวย 3 สูตร Pro Max</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        .tab-active {
+            color: #4338ca; /* indigo-700 */
+            border-bottom-width: 3px;
+            border-color: #4338ca;
+            background-color: #e0e7ff; /* indigo-50 */
+            font-weight: 700;
+        }
+        .tab-inactive {
+            color: #6b7280;
+            border-bottom-width: 3px;
+            border-color: transparent;
+            font-weight: 500;
+        }
+        .tab-inactive:hover {
+            color: #4338ca;
+            background-color: #f3f4f6;
+        }
+        /* Toast Notification Animation */
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+        .toast {
+            animation: fadeInOut 3s forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header & Summary Section -->
+    <header class="bg-indigo-800 text-white shadow-lg shrink-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/10 p-2 rounded-lg">
+                        <i class="fa-solid fa-calculator text-2xl text-yellow-400"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold leading-tight">Lottery Calculator Pro</h1>
+                        <p class="text-xs text-indigo-200">ตรวจสอบสูตรและทำนายผลแม่นยำ</p>
+                    </div>
+                </div>
+
+                <!-- Summary Cards (Show All 3 Formulas) -->
+                <div id="summarySection" class="flex gap-2 opacity-50 transition-opacity duration-500">
+                    <!-- F1 -->
+                    <div class="bg-white text-indigo-900 px-3 py-1.5 rounded-lg shadow-md text-center min-w-[80px]">
+                        <div class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">สูตร 1</div>
+                        <div class="text-xl font-bold text-indigo-700" id="sumF1">--</div>
+                    </div>
+                    <!-- F2 -->
+                    <div class="bg-white text-indigo-900 px-3 py-1.5 rounded-lg shadow-md text-center min-w-[80px]">
+                        <div class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">สูตร 2</div>
+                        <div class="text-xl font-bold text-purple-700" id="sumF2">--</div>
+                    </div>
+                    <!-- F3 -->
+                    <div class="bg-white text-indigo-900 px-3 py-1.5 rounded-lg shadow-md text-center min-w-[80px]">
+                        <div class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">สูตร 3</div>
+                        <div class="text-xl font-bold text-pink-700" id="sumF3">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 max-w-7xl w-full mx-auto p-2 md:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
+        
+        <!-- Left Panel: Input -->
+        <div class="lg:col-span-4 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gray-50 px-4 py-3 border-b flex justify-between items-center">
+                <label class="font-bold text-gray-700 text-sm"><i class="fa-regular fa-clipboard mr-1"></i> ข้อมูลนำเข้า</label>
+                <span class="text-[10px] bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded border border-yellow-200">
+                    Tip: กด Enter เพื่อคำนวณ & Copy
+                </span>
+            </div>
+            
+            <div class="flex-1 p-2 relative">
+                <textarea id="inputData" class="w-full h-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-xs resize-none bg-gray-50 focus:bg-white transition-colors" 
+                placeholder="วางข้อมูลที่นี่... (YYYY-MM-DD 'Top 'Bot)"></textarea>
+            </div>
+
+            <div class="p-3 border-t bg-gray-50 flex gap-2">
+                <button onclick="processData()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition shadow text-sm">
+                    <i class="fa-solid fa-play mr-1"></i> คำนวณ
+                </button>
+                <button onclick="clearData()" class="bg-white hover:bg-red-50 text-red-500 border border-gray-300 font-bold py-2 px-3 rounded-lg transition">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Panel: Results -->
+        <div class="lg:col-span-8 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
+            
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-200 bg-gray-50 overflow-x-auto shrink-0">
+                <button onclick="switchTab(1)" id="tab1" class="tab-active flex-1 py-3 px-4 text-center text-sm whitespace-nowrap transition-all">
+                    สูตร 1 <span class="text-xs font-normal opacity-70 ml-1 hidden sm:inline">(บน+ล่าง)</span>
+                </button>
+                <button onclick="switchTab(2)" id="tab2" class="tab-inactive flex-1 py-3 px-4 text-center text-sm whitespace-nowrap transition-all">
+                    สูตร 2 <span class="text-xs font-normal opacity-70 ml-1 hidden sm:inline">(ล่าง+บน)</span>
+                </button>
+                <button onclick="switchTab(3)" id="tab3" class="tab-inactive flex-1 py-3 px-4 text-center text-sm whitespace-nowrap transition-all">
+                    สูตร 3 <span class="text-xs font-normal opacity-70 ml-1 hidden sm:inline">(สิบบน+สิบบน)</span>
+                </button>
+            </div>
+
+            <!-- Table Header (Sticky) -->
+            <div class="bg-gray-100 border-b text-xs uppercase font-bold text-gray-600 grid grid-cols-12 text-center py-2 shrink-0 pr-2">
+                <div class="col-span-3 text-left pl-4">งวดผล (N+3)</div>
+                <div class="col-span-3">ที่มา 1</div>
+                <div class="col-span-3">ที่มา 2</div>
+                <div class="col-span-1 text-indigo-600">สูตร</div>
+                <div class="col-span-1">ผล</div>
+                <div class="col-span-1">สถานะ</div>
+            </div>
+
+            <!-- Table Body (Scrollable) -->
+            <div id="tableContainer" class="flex-1 overflow-y-auto scroll-smooth relative bg-white">
+                <div id="resultBody" class="text-sm">
+                    <!-- Initial State -->
+                    <div class="flex flex-col items-center justify-center h-64 text-gray-400">
+                        <i class="fa-solid fa-arrow-left text-2xl mb-2 lg:hidden"></i>
+                        <i class="fa-solid fa-table-cells text-4xl mb-2 hidden lg:block"></i>
+                        <p>วางข้อมูลแล้วกด Enter เพื่อเริ่ม</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scroll Down Button (Floating) -->
+            <button onclick="scrollToBottom()" id="scrollBtn" class="absolute bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-12 h-12 shadow-lg flex items-center justify-center transition-transform hover:scale-110 z-10 hidden opacity-90">
+                <i class="fa-solid fa-arrow-down"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Footer (Fixed at bottom) -->
+    <div id="statsFooter" class="bg-white border-t p-2 text-xs flex justify-between items-center px-4 shrink-0 hidden">
+        <div class="font-bold text-gray-500">
+            สถิติสูตร <span id="footerFormulaId">1</span>:
+        </div>
+        <div class="flex gap-4">
+            <span class="text-green-600 font-bold bg-green-50 px-2 rounded">ตรง: <span id="statDirect">0</span></span>
+            <span class="text-orange-500 font-bold bg-orange-50 px-2 rounded">กลับ: <span id="statReverse">0</span></span>
+            <span class="text-indigo-600 font-bold bg-indigo-50 px-2 rounded">แม่นยำ: <span id="statAcc">0%</span></span>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl z-50 flex items-center gap-3 hidden">
+        <i class="fa-solid fa-circle-check text-green-400"></i>
+        <span>คัดลอกเลข 3 สูตรแล้ว!</span>
+    </div>
+
+    <script>
+        let currentData = [];
+        let currentTab = 1;
+        let predictionValues = { f1: '--', f2: '--', f3: '--' };
+
+        // Handle Enter Key
+        document.getElementById('inputData').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent new line
+                processData(true); // Process and Copy
+            }
+        });
+
+        // Scroll Button Visibility
+        document.getElementById('tableContainer').addEventListener('scroll', function() {
+            const container = this;
+            const btn = document.getElementById('scrollBtn');
+            // Show button if not at bottom
+            if (container.scrollHeight - container.scrollTop - container.clientHeight > 100) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
+        });
+
+        function scrollToBottom() {
+            const container = document.getElementById('tableContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearData() {
+            document.getElementById('inputData').value = '';
+            document.getElementById('resultBody').innerHTML = `
+                <div class="flex flex-col items-center justify-center h-64 text-gray-400">
+                    <p>พร้อมใช้งาน</p>
+                </div>`;
+            document.getElementById('summarySection').classList.add('opacity-50');
+            document.getElementById('sumF1').innerText = '--';
+            document.getElementById('sumF2').innerText = '--';
+            document.getElementById('sumF3').innerText = '--';
+            document.getElementById('statsFooter').classList.add('hidden');
+        }
+
+        function switchTab(id) {
+            currentTab = id;
+            // Update UI
+            [1,2,3].forEach(i => {
+                const btn = document.getElementById(`tab${i}`);
+                if(i === id) {
+                    btn.className = "tab-active flex-1 py-3 px-4 text-center text-sm whitespace-nowrap transition-all";
+                } else {
+                    btn.className = "tab-inactive flex-1 py-3 px-4 text-center text-sm whitespace-nowrap transition-all";
+                }
+            });
+            document.getElementById('footerFormulaId').innerText = id;
+            if(currentData.length > 0) renderTable();
+        }
+
+        function processData(autoCopy = false) {
+            const raw = document.getElementById('inputData').value;
+            const lines = raw.split('\n').filter(l => l.trim() !== '');
+            currentData = [];
+            
+            lines.forEach(line => {
+                const p = line.trim().split(/\s+/);
+                if(p.length >= 3) {
+                    currentData.push({
+                        date: p[0],
+                        top: p[1].replace(/'/g, '').trim(),
+                        bot: p[2].replace(/'/g, '').trim()
+                    });
+                }
+            });
+
+            if(currentData.length < 4) return;
+
+            // Calculate Predictions for all formulas
+            calculateAllPredictions();
+            
+            // Render Table for current tab
+            renderTable();
+
+            // Reveal UI
+            document.getElementById('summarySection').classList.remove('opacity-50');
+            document.getElementById('statsFooter').classList.remove('hidden');
+
+            // Auto Scroll
+            setTimeout(scrollToBottom, 100);
+
+            // Auto Copy if triggered by Enter
+            if(autoCopy) {
+                copyToClipboard();
+            }
+        }
+
+        function getVal(draw, type) {
+            const t = draw.top.padStart(3,'0');
+            const b = draw.bot.padStart(2,'0');
+            if(type === 'UnitTop') return t.slice(-1);
+            if(type === 'UnitBot') return b.slice(-1);
+            if(type === 'TenTop') return t.slice(-2, -1);
+            return '0';
+        }
+
+        function calculateAllPredictions() {
+            const len = currentData.length;
+            const last = currentData[len-1]; // N+2 source
+            const prev = currentData[len-3]; // N source
+
+            // F1: UnitTop(N) + UnitBot(N+2)
+            const f1 = getVal(prev, 'UnitTop') + getVal(last, 'UnitBot');
+            
+            // F2: UnitBot(N) + UnitTop(N+2)
+            const f2 = getVal(prev, 'UnitBot') + getVal(last, 'UnitTop');
+
+            // F3: TenTop(N) + TenTop(N+2)
+            const f3 = getVal(prev, 'TenTop') + getVal(last, 'TenTop');
+
+            predictionValues = { f1, f2, f3 };
+
+            // Update Header Summary
+            document.getElementById('sumF1').innerText = f1;
+            document.getElementById('sumF2').innerText = f2;
+            document.getElementById('sumF3').innerText = f3;
+        }
+
+        function copyToClipboard() {
+            // Format: "XX   YY   ZZ" (Wide spacing for GoodNotes)
+            const textToCopy = `${predictionValues.f1}   ${predictionValues.f2}   ${predictionValues.f3}`;
+            
+            // Modern Clipboard API with fallback
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(showToast);
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                textArea.style.position = "fixed";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast();
+                } catch (err) {
+                    console.error('Copy failed', err);
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('hidden');
+            toast.classList.add('toast');
+            setTimeout(() => {
+                toast.classList.remove('toast');
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('resultBody');
+            tbody.innerHTML = '';
+            
+            let stats = { direct: 0, reverse: 0, wrong: 0, total: 0 };
+
+            for(let i=0; i<currentData.length-3; i++) {
+                const d1 = currentData[i];     // N
+                const d3 = currentData[i+2];   // N+2
+                const target = currentData[i+3]; // N+3 (Target)
+
+                let v1, v2;
+                if(currentTab === 1) { v1 = getVal(d1,'UnitTop'); v2 = getVal(d3,'UnitBot'); }
+                else if(currentTab === 2) { v1 = getVal(d1,'UnitBot'); v2 = getVal(d3,'UnitTop'); }
+                else { v1 = getVal(d1,'TenTop'); v2 = getVal(d3,'TenTop'); }
+
+                const res = v1 + v2;
+                const rev = v2 + v1;
+                const actual = target.bot;
+
+                let status = '<span class="text-gray-300">-</span>';
+                let bg = '';
+                
+                if(res === actual) {
+                    status = '<i class="fa-solid fa-check text-green-500"></i>';
+                    bg = 'bg-green-50';
+                    stats.direct++;
+                } else if(rev === actual) {
+                    status = '<i class="fa-solid fa-right-left text-orange-400"></i>';
+                    bg = 'bg-orange-50';
+                    stats.reverse++;
+                } else {
+                    status = '<i class="fa-solid fa-xmark text-red-300"></i>';
+                    stats.wrong++;
+                }
+                stats.total++;
+
+                const row = `
+                <div class="grid grid-cols-12 text-center py-2 border-b hover:bg-indigo-50/30 transition-colors ${bg} items-center">
+                    <div class="col-span-3 text-left pl-4 font-mono text-gray-600">${target.date}</div>
+                    <div class="col-span-3 text-xs text-gray-400">
+                        ${d1.date}<br><span class="text-gray-600 font-bold text-sm">${currentTab===1?d1.top:(currentTab===2?d1.bot:d1.top)}</span>
+                    </div>
+                    <div class="col-span-3 text-xs text-gray-400">
+                        ${d3.date}<br><span class="text-gray-600 font-bold text-sm">${currentTab===1?d3.bot:(currentTab===2?d3.top:d3.top)}</span>
+                    </div>
+                    <div class="col-span-1 font-bold text-indigo-700 text-lg border-x border-indigo-100 bg-white/50">${res}</div>
+                    <div class="col-span-1 font-bold text-gray-800">${actual}</div>
+                    <div class="col-span-1">${status}</div>
+                </div>`;
+                tbody.insertAdjacentHTML('beforeend', row);
+            }
+
+            // Update Stats Footer
+            document.getElementById('statDirect').innerText = stats.direct;
+            document.getElementById('statReverse').innerText = stats.reverse;
+            const acc = ((stats.direct + stats.reverse)/stats.total*100).toFixed(0);
+            document.getElementById('statAcc').innerText = isNaN(acc) ? '0%' : acc + '%';
+        }
+    </script>
+</body>
+</html>
+

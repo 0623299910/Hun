@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สุ่มหวย Pro (Auto Copy)</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        
+        .pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; transform: scale(0.5); }
+        @keyframes popIn { to { transform: scale(1); opacity: 1; } }
+
+        .slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Toast Animation */
+        .toast-enter { transform: translateY(100%); opacity: 0; }
+        .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 300ms; }
+        .toast-exit { opacity: 1; }
+        .toast-exit-active { opacity: 0; transition: all 300ms; }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-2 sm:p-4">
+
+    <div id="root" class="w-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Icons ---
+        const Icon = ({ path, className = "w-5 h-5" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
+
+        const Icons = {
+            Refresh: <Icon path={<><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></>} />,
+            Grid: <Icon path={<><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></>} />,
+            Target: <Icon path={<><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>} />,
+            Copy: <Icon path={<><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>} />,
+            Check: <Icon path={<polyline points="20 6 9 17 4 12"/>} />,
+        };
+
+        const ODDS = [1, 3, 5, 7, 9];
+        const EVENS = [0, 2, 4, 6, 8];
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('grid');
+            const [singleMode, setSingleMode] = useState('odd-even');
+            const [gridNumbers, setGridNumbers] = useState({ row1: [], row2: [] });
+            const [singleNumbers, setSingleNumbers] = useState({ top: null, bottom: null });
+            const [isAnimating, setIsAnimating] = useState(false);
+            
+            // New Features State
+            const [autoCopy, setAutoCopy] = useState(false);
+            const [toastMsg, setToastMsg] = useState(null);
+
+            // --- Copy Logic ---
+            const copyToClipboard = (text) => {
+                const textarea = document.createElement("textarea");
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    setToastMsg("คัดลอกเรียบร้อย! (พร้อมวางใน GoodNotes)");
+                    setTimeout(() => setToastMsg(null), 2500);
+                } catch (err) {
+                    console.error('Copy failed', err);
+                }
+                document.body.removeChild(textarea);
+            };
+
+            const generateGrid = () => {
+                setIsAnimating(true);
+                setTimeout(() => {
+                    const r1 = Array.from({ length: 5 }, () => Math.floor(Math.random() * 10));
+                    const r2 = Array.from({ length: 5 }, () => Math.floor(Math.random() * 10));
+                    setGridNumbers({ row1: r1, row2: r2 });
+                    setIsAnimating(false);
+
+                    if (autoCopy) {
+                        // Format: 5 spaces between numbers for clear separation in notes
+                        const line1 = r1.join("     "); 
+                        const line2 = r2.join("     ");
+                        copyToClipboard(`${line1}\n${line2}`);
+                    }
+                }, 150);
+            };
+
+            const generateSingle = () => {
+                setIsAnimating(true);
+                setTimeout(() => {
+                    let topPool, bottomPool;
+                    if (singleMode === 'odd-even') { topPool = ODDS; bottomPool = EVENS; } 
+                    else if (singleMode === 'odd-odd') { topPool = ODDS; bottomPool = ODDS; } 
+                    else if (singleMode === 'even-even') { topPool = EVENS; bottomPool = EVENS; }
+
+                    const top = topPool[Math.floor(Math.random() * topPool.length)];
+                    const bottom = bottomPool[Math.floor(Math.random() * bottomPool.length)];
+
+                    setSingleNumbers({ top, bottom });
+                    setIsAnimating(false);
+
+                    if (autoCopy) {
+                        // Format: Just the two numbers separated by spaces
+                        copyToClipboard(`${top}     ${bottom}`);
+                    }
+                }, 150);
+            };
+
+            const handleGenerate = () => activeTab === 'grid' ? generateGrid() : generateSingle();
+
+            const handleSingleModeChange = (mode) => {
+                setSingleMode(mode);
+                // Optional: Auto generate when switching modes? 
+                // Let's keep manual trigger for control, or small delay
+                // setTimeout(() => document.getElementById('gen-btn').click(), 50);
+            };
+
+            // Initial load
+            useEffect(() => { generateGrid(); }, []);
+            
+            // Reset when tab changes (optional: generate new or keep old?)
+            // Let's generate new for freshness
+            useEffect(() => { handleGenerate(); }, [activeTab]);
+
+            return (
+                <div className="w-full max-w-xl mx-auto relative">
+                    
+                    {/* Main Card */}
+                    <div className="bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-slate-700 flex flex-col min-h-[600px] relative z-10">
+                        
+                        {/* Tabs */}
+                        <div className="flex border-b border-slate-700 bg-slate-900/50">
+                            <button onClick={() => setActiveTab('grid')} className={`flex-1 py-4 text-base font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'grid' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>
+                                {Icons.Grid} ชุด 5 ตัว
+                            </button>
+                            <button onClick={() => setActiveTab('single')} className={`flex-1 py-4 text-base font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'single' ? 'bg-pink-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>
+                                {Icons.Target} วัดดวง 1 ตัว
+                            </button>
+                        </div>
+
+                        {/* Settings Bar (Auto Copy Toggle) */}
+                        <div className="bg-slate-900/30 px-4 py-2 flex items-center justify-end border-b border-slate-700/50">
+                            <label className="flex items-center cursor-pointer gap-2 group">
+                                <span className={`text-xs font-semibold transition-colors ${autoCopy ? 'text-emerald-400' : 'text-slate-500'}`}>
+                                    {autoCopy ? 'Auto Copy: ON' : 'Auto Copy: OFF'}
+                                </span>
+                                <div className="relative">
+                                    <input type="checkbox" className="sr-only" checked={autoCopy} onChange={() => setAutoCopy(!autoCopy)} />
+                                    <div className={`block w-10 h-6 rounded-full transition-colors ${autoCopy ? 'bg-emerald-500' : 'bg-slate-600'}`}></div>
+                                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${autoCopy ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                </div>
+                            </label>
+                        </div>
+
+                        {/* Content Area */}
+                        <div className="p-4 sm:p-6 flex-1 flex flex-col">
+
+                            {/* --- TAB 1: Grid 5x2 --- */}
+                            {activeTab === 'grid' && (
+                                <div className="slide-up flex-1 flex flex-col justify-center">
+                                    <div className="text-center mb-6">
+                                        <h2 className="text-2xl font-bold text-indigo-300">สุ่มเลข 0-9 (5 หลัก)</h2>
+                                        <p className="text-sm text-slate-500 mt-1">
+                                            {autoCopy ? <span className="text-emerald-400 flex items-center justify-center gap-1"><span className="w-1 h-1 rounded-full bg-emerald-400"></span>พร้อมคัดลอกลง GoodNotes</span> : 'แตะปุ่มเพื่อสุ่ม'}
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-5 gap-2 sm:gap-3 mb-4">
+                                        <div className="col-span-5 flex justify-between px-2 mb-1 text-[10px] uppercase text-slate-500 font-bold">
+                                            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                                        </div>
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <div key={i} className="flex flex-col gap-2">
+                                                <div className="aspect-[3/4] flex items-center justify-center rounded-xl bg-slate-700 text-cyan-400 border-b-4 border-slate-900 shadow-inner transition-transform hover:scale-105">
+                                                    <span className={`text-3xl sm:text-4xl font-black ${isAnimating ? 'opacity-0' : 'pop-in'}`} style={{animationDelay: `${i*50}ms`}}>
+                                                        {gridNumbers.row1[i]}
+                                                    </span>
+                                                </div>
+                                                <div className="h-0.5 bg-slate-700 w-1/2 mx-auto rounded-full opacity-30"></div>
+                                                <div className="aspect-[3/4] flex items-center justify-center rounded-xl bg-slate-700 text-pink-400 border-b-4 border-slate-900 shadow-inner transition-transform hover:scale-105">
+                                                     <span className={`text-3xl sm:text-4xl font-black ${isAnimating ? 'opacity-0' : 'pop-in'}`} style={{animationDelay: `${(i*50)+100}ms`}}>
+                                                        {gridNumbers.row2[i]}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-auto"></div>
+                                </div>
+                            )}
+
+                            {/* --- TAB 2: Single --- */}
+                            {activeTab === 'single' && (
+                                <div className="slide-up flex-1 flex flex-col">
+                                    <div className="text-center mb-6">
+                                        <h2 className="text-2xl font-bold text-pink-300">วัดดวง 1 ตัว</h2>
+                                        <p className="text-sm text-slate-500 mt-1">เลือกสูตรด้านล่าง</p>
+                                    </div>
+
+                                    <div className="flex bg-slate-900 p-1 rounded-xl mb-8 border border-slate-700 shadow-inner">
+                                        {['odd-even', 'odd-odd', 'even-even'].map(mode => (
+                                            <button key={mode} onClick={() => handleSingleModeChange(mode)} className={`flex-1 py-3 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${singleMode === mode ? 'bg-pink-500 text-white shadow-lg' : 'text-slate-400 hover:text-slate-300'}`}>
+                                                {mode === 'odd-even' ? 'บนคี่ / ล่างคู่' : mode === 'odd-odd' ? 'บนคี่ / ล่างคี่' : 'บนคู่ / ล่างคู่'}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex flex-col items-center gap-6 flex-1 mb-4">
+                                        {/* Top Number */}
+                                        <div className="flex items-center gap-4 w-full px-2 sm:px-8">
+                                            <div className="flex flex-col items-center gap-1 min-w-[3rem]">
+                                                <span className="text-sm font-bold text-cyan-500">บน</span>
+                                                <span className="text-[10px] text-slate-500 border border-slate-700 px-1 rounded bg-slate-900">
+                                                    {singleNumbers.top !== null && (ODDS.includes(singleNumbers.top) ? 'คี่' : 'คู่')}
+                                                </span>
+                                            </div>
+                                            <div className="flex-1 aspect-[2/1] flex items-center justify-center bg-slate-700 rounded-2xl border-b-8 border-slate-900 shadow-2xl relative overflow-hidden">
+                                                <span className={`text-7xl sm:text-8xl font-black text-cyan-400 leading-none drop-shadow-lg ${isAnimating ? 'opacity-0' : 'pop-in'}`}>
+                                                    {singleNumbers.top}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="w-full px-20"><div className="h-0.5 bg-slate-700 w-full rounded-full"></div></div>
+
+                                        {/* Bottom Number */}
+                                        <div className="flex items-center gap-4 w-full px-2 sm:px-8">
+                                            <div className="flex flex-col items-center gap-1 min-w-[3rem]">
+                                                <span className="text-sm font-bold text-pink-500">ล่าง</span>
+                                                <span className="text-[10px] text-slate-500 border border-slate-700 px-1 rounded bg-slate-900">
+                                                    {singleNumbers.bottom !== null && (ODDS.includes(singleNumbers.bottom) ? 'คี่' : 'คู่')}
+                                                </span>
+                                            </div>
+                                            <div className="flex-1 aspect-[2/1] flex items-center justify-center bg-slate-700 rounded-2xl border-b-8 border-slate-900 shadow-2xl relative overflow-hidden">
+                                                <span className={`text-7xl sm:text-8xl font-black text-pink-400 leading-none drop-shadow-lg ${isAnimating ? 'opacity-0' : 'pop-in'}`} style={{animationDelay: '100ms'}}>
+                                                    {singleNumbers.bottom}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Generate Button */}
+                            <button 
+                                id="gen-btn"
+                                onClick={handleGenerate}
+                                disabled={isAnimating}
+                                className={`w-full py-5 rounded-2xl text-xl font-bold text-white shadow-xl flex items-center justify-center gap-3 mt-4 active:scale-95 active:shadow-none transition-all ${activeTab === 'grid' ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500' : 'bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-400 hover:to-pink-500'}`}
+                            >
+                                <span className={isAnimating ? 'animate-spin' : ''}>{Icons.Refresh}</span>
+                                {isAnimating ? 'กำลังสุ่ม...' : 'สุ่มเลขใหม่'}
+                            </button>
+
+                        </div>
+                    </div>
+
+                    {/* Toast Notification */}
+                    <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toastMsg ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}`}>
+                        <div className="bg-emerald-500 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 border-2 border-emerald-400">
+                            <div className="bg-white text-emerald-500 p-1 rounded-full">
+                                {Icons.Check}
+                            </div>
+                            <span className="font-bold text-sm sm:text-base">{toastMsg}</span>
+                        </div>
+                    </div>
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+

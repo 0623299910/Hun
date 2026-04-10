@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Triple Formula: Auto Copy Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        h1 { margin-top: 0; color: var(--primary); font-size: 1.5rem; text-align: center; font-weight: 700; }
+        .subtitle { text-align: center; color: #64748b; font-size: 0.9rem; margin-bottom: 20px; }
+
+        .layout { display: grid; gap: 20px; }
+        @media(min-width: 768px) { .layout { grid-template-columns: 1fr 1.5fr; } }
+
+        /* Input Area */
+        textarea {
+            width: 100%;
+            height: 180px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: none;
+            box-sizing: border-box;
+            background: #fdfdfd;
+            transition: all 0.2s;
+        }
+        textarea:focus { outline: none; border-color: var(--primary); background: #fff; }
+
+        .btn-calc {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-calc:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+        .btn-copy-main {
+            width: 100%;
+            padding: 20px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-copy-main:active { transform: scale(0.98); }
+
+        /* Result Cards */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+        .card h3 { margin: 0 0 5px; font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; }
+        .card .num { font-size: 2rem; font-weight: 800; }
+
+        .f1 { color: #6366f1; border-color: #e0e7ff; background: #f5f7ff; }
+        .f2 { color: #f59e0b; border-color: #fef3c7; background: #fffcf5; }
+        .f3 { color: #10b981; border-color: #d1fae5; background: #f6fffb; }
+
+        /* Table */
+        .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: center; }
+        th { background: #f8fafc; padding: 12px; border-bottom: 2px solid #e2e8f0; color: #64748b; }
+        td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+        .pass { color: #10b981; font-weight: bold; }
+        .fail { color: #ef4444; font-weight: bold; background: #fef2f2; }
+
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #1e293b;
+            color: #fff;
+            text-align: center;
+            border-radius: 50px;
+            padding: 16px;
+            position: fixed;
+            z-index: 100;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 16px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            font-weight: 600;
+        }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+
+        .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Quick Mode: Triple Formula</h1>
+    <p class="subtitle">วางข้อมูล Excel > ระบบคำนวณอัตโนมัติ > แตะก๊อปปี้ไปวางต่อ</p>
+
+    <div class="layout">
+        <div>
+            <label style="font-weight:bold; display:block; margin-bottom:8px; font-size: 0.9rem;">
+                <i class="fa-solid fa-clipboard-list"></i> 1. วางข้อมูลย้อนหลัง:
+            </label>
+            <textarea id="dataInput" placeholder="2025-03-10  '915  '92..."></textarea>
+            
+            <button onclick="processData()" class="btn-calc">
+                <i class="fa-solid fa-bolt"></i> กดคำนวณ (หรือรอ Auto)
+            </button>
+            
+            <div style="margin-top:15px; font-size:0.75rem; color:#64748b; line-height: 1.4; background: #f1f5f9; padding: 10px; border-radius: 8px;">
+                <strong>วิธีใช้สำหรับ iPad:</strong><br>
+                1. วางข้อมูลในช่องด้านบน<br>
+                2. ระบบจะคำนวณและดึงปุ่ม <strong>"ก๊อปปี้"</strong> ออกมาให้<br>
+                3. แตะปุ่มสีเขียว 1 ครั้ง แล้วไปวางใน GoodNotes
+            </div>
+
+            <button id="mainCopyBtn" onclick="copyCalculatedResult()" class="btn-copy-main animate-pop" style="display:none; margin-top: 20px; margin-bottom: 20px;">
+                <i class="fa-solid fa-copy"></i> คัดลอกเลข 3 คู่นี้
+            </button>
+        </div>
+
+        <div id="resultArea" style="display:none;" class="animate-pop">
+            <div class="cards">
+                <div class="card f1">
+                    <h3>ดับ 1</h3>
+                    <div class="num" id="res1">--</div>
+                </div>
+                <div class="card f2">
+                    <h3>ดับ 2</h3>
+                    <div class="num" id="res2">--</div>
+                </div>
+                <div class="card f3">
+                    <h3>ดับ 3</h3>
+                    <div class="num" id="res3">--</div>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>งวด</th>
+                            <th>ผล</th>
+                            <th>ดับ 1</th>
+                            <th>ดับ 2</th>
+                            <th>ดับ 3</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast">คัดลอกเรียบร้อย!</div>
+
+<script>
+    let currentCalcText = "";
+
+    function showToast(text) {
+        const toast = document.getElementById("toast");
+        toast.innerText = "✅ คัดลอกสำเร็จ: " + text;
+        toast.className = "show";
+        setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+    }
+
+    // iPad-Safe Manual Copy
+    function copyCalculatedResult() {
+        if (!currentCalcText) return;
+        
+        const el = document.createElement('textarea');
+        el.value = currentCalcText;
+        el.setAttribute('readonly', '');
+        el.style.position = 'absolute';
+        el.style.left = '-9999px';
+        document.body.appendChild(el);
+        
+        // Handling for iOS
+        const selected = document.getSelection().rangeCount > 0 ? document.getSelection().getRangeAt(0) : false;
+        el.select();
+        el.setSelectionRange(0, 999999);
+        
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        
+        if (selected) {
+            document.getSelection().removeAllRanges();
+            document.getSelection().addRange(selected);
+        }
+        
+        showToast(currentCalcText);
+
+        // Visual Feedback on button
+        const btn = document.getElementById('mainCopyBtn');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> ก๊อปปี้แล้ว!';
+        btn.style.background = "#059669";
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.style.background = "#10b981";
+        }, 2000);
+    }
+
+    function processData() {
+        const inputEl = document.getElementById('dataInput');
+        const rawInput = inputEl.value.trim();
+        if (!rawInput) return;
+
+        let data = [];
+        const lines = rawInput.split('\n');
+
+        lines.forEach(line => {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length >= 3) {
+                const dateStr = parts[0];
+                const top = parts[1].replace(/['"\s]/g, '');
+                const bot = parts[2].replace(/['"\s]/g, '');
+                if (!isNaN(top) && !isNaN(bot) && top.length === 3 && bot.length === 2) {
+                    data.push({ date: dateStr, top: top, bot: bot });
+                }
+            }
+        });
+
+        if (data.length < 3) {
+            document.getElementById('resultArea').style.display = 'none';
+            document.getElementById('mainCopyBtn').style.display = 'none'; // ซ่อนปุ่มถ้าข้อมูลไม่พอ
+            return;
+        }
+
+        // Calculation Logic
+        let historyHtml = '';
+        
+        for (let i = 2; i < data.length; i++) {
+            const p2 = data[i-2];
+            const p1 = data[i-1];
+            const curr = data[i];
+
+            const d1 = `${(parseInt(p2.top[2]) + parseInt(p1.top[2])) % 10}${(parseInt(p2.bot[0]) + parseInt(p1.bot[0])) % 10}`;
+            const d2 = `${(parseInt(p2.bot[0]) + parseInt(p2.bot[1])) % 10}${(parseInt(p1.bot[0]) + parseInt(p1.bot[1])) % 10}`;
+            const d3 = `${(parseInt(p2.top[0]) + parseInt(p2.top[1]) + parseInt(p2.top[2])) % 10}${(parseInt(p1.top[0]) + parseInt(p1.top[1]) + parseInt(p1.top[2])) % 10}`;
+
+            const pass1 = d1 !== curr.bot;
+            const pass2 = d2 !== curr.bot;
+            const pass3 = d3 !== curr.bot;
+
+            historyHtml = `
+                <tr>
+                    <td>${curr.date}</td>
+                    <td style="font-weight:bold;">${curr.bot}</td>
+                    <td class="${pass1?'pass':'fail'}">${d1} ${pass1?'':'❌'}</td>
+                    <td class="${pass2?'pass':'fail'}">${d2} ${pass2?'':'❌'}</td>
+                    <td class="${pass3?'pass':'fail'}">${d3} ${pass3?'':'❌'}</td>
+                </tr>
+            ` + historyHtml;
+        }
+
+        // Predict Next based on 2 most recent rows
+        const l1 = data[data.length - 1];
+        const l2 = data[data.length - 2];
+
+        const next1 = `${(parseInt(l2.top[2]) + parseInt(l1.top[2])) % 10}${(parseInt(l2.bot[0]) + parseInt(l1.bot[0])) % 10}`;
+        const next2 = `${(parseInt(l2.bot[0]) + parseInt(l2.bot[1])) % 10}${(parseInt(l1.bot[0]) + parseInt(l1.bot[1])) % 10}`;
+        const next3 = `${(parseInt(l2.top[0]) + parseInt(l2.top[1]) + parseInt(l2.top[2])) % 10}${(parseInt(l1.top[0]) + parseInt(l1.top[1]) + parseInt(l1.top[2])) % 10}`;
+
+        // Update UI
+        document.getElementById('res1').innerText = next1;
+        document.getElementById('res2').innerText = next2;
+        document.getElementById('res3').innerText = next3;
+        document.getElementById('tableBody').innerHTML = historyHtml;
+        
+        document.getElementById('resultArea').style.display = 'block';
+        document.getElementById('mainCopyBtn').style.display = 'flex'; // แสดงปุ่มเมื่อคำนวณเสร็จ
+
+        // Prepare the copy text
+        currentCalcText = `${next1} ${next2} ${next3}`;
+
+        // Auto-Clear Input
+        inputEl.value = "";
+        
+        // เลื่อนกลับไปด้านบนสุดเพื่อให้เห็นภาพรวมและปุ่มจะอยู่ตรงกลางค่อนไปด้านล่างพอดี
+        setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100);
+    }
+
+    // Auto-Process Workflow (Debounce)
+    let debounceTimer;
+    document.getElementById('dataInput').addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            if (this.value.trim().length > 10) {
+                processData();
+            }
+        }, 600);
+    });
+
+    function checkEnter(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            processData();
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="th">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lottery Pattern Analyzer (Auto Calc)</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    .digit-card {
+      transition: all 0.3s ease;
+    }
+    
+    .digit-card:hover {
+      transform: translateY(-4px);
+    }
+    
+    .progress-bar {
+      transition: width 0.6s ease;
+    }
+
+    .digit-selector-btn.active {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="w-full min-h-full">
+  <div class="w-full min-h-full" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+   <div class="w-full px-6 py-8">
+    <div class="max-w-6xl mx-auto"><div class="text-center mb-8">
+      <h1 id="main-title" class="text-4xl font-bold text-white mb-2">วิเคราะห์รูปแบบหวย</h1>
+      <p id="subtitle" class="text-xl text-purple-100">เมื่อเลข 0 มาหลักร้อย เลขท้าย 1-2 ตัวใดมีโอกาสมากที่สุด</p>
+     </div><div class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+      <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">🎯 เลือกเลขหลักร้อยที่ต้องการวิเคราะห์</h2>
+      <div class="grid grid-cols-5 md:grid-cols-10 gap-2"><button class="digit-selector-btn active bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-all" data-digit="0">0</button> <button class="digit-selector-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-all" data-digit="1">1</button> <button class="digit-selector-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-all" data-digit="2">2</button> <button class="digit-selector-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-all" data-digit="3">3</button> <button class="digit-selector-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-all" data-digit="4">4</button> <button class="digit-selector-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-all" data-digit="5">5</button> <button class="digit-selector-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-all" data-digit="6">6</button> <button class="digit-selector-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-all" data-digit="7">7</button> <button class="digit-selector-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-all" data-digit="8">8</button> <button class="digit-selector-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-all" data-digit="9">9</button>
+      </div>
+     </div>
+     
+     <div id="results-section" class="bg-white rounded-2xl shadow-2xl p-8 mb-6">
+      <h2 id="results-title" class="text-2xl font-bold text-gray-800 mb-6 text-center">ผลการวิเคราะห์ TOP 8</h2>
+      <p id="current-analysis" class="text-center text-gray-600 mb-4">กำลังวิเคราะห์เลข <span class="font-bold text-purple-600 text-xl">0</span> หลักร้อย</p>
+      <div id="results-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"></div>
+      
+      <div id="least-likely-section" class="border-t-2 border-gray-200 pt-6">
+       <h3 class="text-xl font-bold text-red-600 mb-4 text-center">⚠️ เลขที่มีโอกาสน้อยที่สุด 2 อันดับ</h3>
+       <div id="least-likely-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </div>
+     </div>
+     
+     <div class="bg-white rounded-2xl shadow-2xl p-8 mb-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">📝 บันทึกข้อมูลหวยใหม่</h2>
+      
+      <div class="mb-6 bg-purple-50 p-4 rounded-xl border border-purple-100">
+       <div class="flex flex-col gap-1 mb-3">
+        <h3 class="text-lg font-bold text-gray-800">⚡ วางข้อมูลปุ๊บ ระบบคำนวณให้ทันที!</h3>
+        <p class="text-sm text-gray-600">เพียงกด "วาง (Paste)" หรือกด Enter ข้อมูลจะถูกบันทึกอัตโนมัติ (รองรับคัดลอกจาก Excel)</p>
+       </div>
+       <textarea id="bulk-input" rows="5" placeholder="จิ้มที่นี่แล้วกด วาง (Paste) ได้เลย...
+2026-01-21	320	57
+2026-01-20	995	10" class="w-full px-4 py-3 border-2 border-purple-300 rounded-lg focus:border-purple-600 focus:shadow-lg focus:outline-none font-mono text-sm transition-all"></textarea> 
+      </div>
+
+      <div class="border-t-2 border-gray-200 pt-6">
+        <p class="text-gray-600 mb-4 text-sm font-semibold">หรือเพิ่มทีละรายการแบบกรอกเอง:</p>
+        <form id="add-data-form" class="mb-2">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div><label for="input-date" class="block text-sm font-medium text-gray-700 mb-2">วันที่</label> <input type="date" id="input-date" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+            </div>
+            <div><label for="input-number" class="block text-sm font-medium text-gray-700 mb-2">3 ตัวบน</label> <input type="text" id="input-number" pattern="[0-9]{3}" maxlength="3" placeholder="000" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+            </div>
+            <div><label for="input-last2" class="block text-sm font-medium text-gray-700 mb-2">2 ตัวล่าง</label> <input type="text" id="input-last2" pattern="[0-9]{2}" maxlength="2" placeholder="00" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+            </div>
+        </div><button type="submit" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition-colors text-sm"> เพิ่มรายการเดียว </button>
+        </form>
+      </div>
+
+      <div class="border-t-2 border-gray-200 pt-6 mt-6">
+       <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-bold text-gray-800">ข้อมูลปัจจุบัน (<span id="data-count">0</span> รายการ)</h3>
+        <div class="flex gap-2 flex-wrap"><button id="clear-old-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"> 🧹 ล้างข้อมูลเก่า </button> <button id="clear-all-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"> 🗑️ ลบทั้งหมด </button>
+        </div>
+       </div>
+       <div id="data-list" class="max-h-64 overflow-y-auto bg-gray-50 rounded-lg p-4 font-mono text-sm"></div>
+      </div>
+     </div><div class="bg-white bg-opacity-20 backdrop-blur-lg rounded-2xl p-6 text-white">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+       <div>
+        <div class="text-3xl font-bold" id="total-cases">
+         0
+        </div>
+        <div class="text-sm text-purple-100">
+         งวดที่มีเลขนี้หลักร้อย
+        </div>
+       </div>
+       <div>
+        <div class="text-3xl font-bold" id="date-range">
+         -
+        </div>
+        <div class="text-sm text-purple-100">
+         ช่วงวันที่วิเคราะห์
+        </div>
+       </div>
+       <div>
+        <div class="text-3xl font-bold" id="most-common">
+         -
+        </div>
+        <div class="text-sm text-purple-100">
+         เลขที่พบมากที่สุด
+        </div>
+       </div>
+       <div>
+        <div class="text-3xl font-bold" id="highest-prob">
+         0%
+        </div>
+        <div class="text-sm text-purple-100">
+         โอกาสสูงสุด
+        </div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div><div id="clear-old-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+    <div class="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
+     <h3 class="text-2xl font-bold text-gray-800 mb-4">🧹 ล้างข้อมูลเก่า</h3>
+     <p class="text-gray-600 mb-4">เลือกช่วงเวลาที่ต้องการลบข้อมูล:</p>
+     <div class="space-y-3 mb-6"><button class="clear-option-btn w-full text-left px-4 py-3 bg-orange-50 hover:bg-orange-100 rounded-lg border-2 border-orange-200 transition-colors" data-months="3"> ลบข้อมูลที่เก่ากว่า <strong>3 เดือน</strong> </button> <button class="clear-option-btn w-full text-left px-4 py-3 bg-orange-50 hover:bg-orange-100 rounded-lg border-2 border-orange-200 transition-colors" data-months="6"> ลบข้อมูลที่เก่ากว่า <strong>6 เดือน</strong> </button> <button class="clear-option-btn w-full text-left px-4 py-3 bg-orange-50 hover:bg-orange-100 rounded-lg border-2 border-orange-200 transition-colors" data-months="12"> ลบข้อมูลที่เก่ากว่า <strong>1 ปี</strong> </button>
+     </div>
+     <div class="border-t pt-4">
+      <p class="text-sm text-gray-500 mb-3">หรือกำหนดวันที่เอง:</p><label for="custom-date" class="block text-sm font-medium text-gray-700 mb-2">ลบข้อมูลก่อนวันที่:</label>
+      <div class="flex gap-2"><input type="date" id="custom-date" class="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none"> <button id="clear-custom-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2 rounded-lg transition-colors"> ลบ </button>
+      </div>
+     </div><button id="close-modal-btn" class="w-full mt-6 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors"> ยกเลิก </button>
+    </div>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      main_title: "วิเคราะห์รูปแบบหวย",
+      subtitle: "เมื่อเลข 0 มาหลักร้อย เลขท้าย 1-2 ตัวใดมีโอกาสมากที่สุด",
+      results_title: "ผลการวิเคราะห์ TOP 8",
+      probability_label: "โอกาส",
+      background_color: "#667eea",
+      surface_color: "#ffffff",
+      text_color: "#1f2937",
+      primary_action_color: "#8b5cf6",
+      secondary_action_color: "#a78bfa",
+      font_family: "system-ui",
+      font_size: 16
+    };
+
+    let lotteryData = [];
+    let selectedDigit = '0';
+
+    function analyzePatterns(targetDigit) {
+      const casesWithDigit = lotteryData.filter(item => {
+        const hundredsDigit = item.number.charAt(0);
+        return hundredsDigit === targetDigit;
+      });
+
+      const digitCounts = {};
+      for (let i = 0; i <= 9; i++) {
+        digitCounts[i] = 0;
+      }
+
+      casesWithDigit.forEach(item => {
+        const last2 = item.last2;
+        for (let char of last2) {
+          const digit = parseInt(char);
+          digitCounts[digit]++;
+        }
+      });
+
+      const allSortedDigits = Object.entries(digitCounts)
+        .map(([digit, count]) => ({
+          digit: parseInt(digit),
+          count: count,
+          probability: casesWithDigit.length > 0 ? (count / (casesWithDigit.length * 2) * 100).toFixed(1) : '0.0'
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      const topDigits = allSortedDigits.slice(0, 8);
+      const leastLikelyDigits = allSortedDigits.slice(-2).reverse();
+
+      return {
+        topDigits: topDigits,
+        leastLikelyDigits: leastLikelyDigits,
+        totalCases: casesWithDigit.length,
+        dateRange: casesWithDigit.length > 0 ? 
+          `${casesWithDigit[casesWithDigit.length - 1].date.slice(5)} - ${casesWithDigit[0].date.slice(5)}` : '-'
+      };
+    }
+
+    function renderResults() {
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const analysis = analyzePatterns(selectedDigit);
+      const container = document.getElementById('results-container');
+      
+      document.getElementById('current-analysis').innerHTML = `กำลังวิเคราะห์เลข <span class="font-bold text-purple-600 text-xl">${selectedDigit}</span> หลักร้อย`;
+      document.getElementById('subtitle').textContent = `เมื่อเลข ${selectedDigit} มาหลักร้อย เลขท้าย 1-2 ตัวใดมีโอกาสมากที่สุด`;
+      
+      container.innerHTML = '';
+      
+      if (analysis.totalCases === 0) {
+        container.innerHTML = '<div class="col-span-2 text-center text-gray-500 py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">ไม่พบข้อมูลสำหรับเลข ' + selectedDigit + ' หลักร้อย<br><span class="text-sm">กรุณาเพิ่มข้อมูลเพื่อเริ่มการวิเคราะห์</span></div>';
+        document.getElementById('least-likely-container').innerHTML = '<div class="col-span-2 text-center text-gray-400 py-4 text-sm">ยังไม่มีข้อมูลเพียงพอ</div>';
+      } else {
+        const colors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'];
+        
+        analysis.topDigits.forEach((item, index) => {
+          const card = document.createElement('div');
+          card.className = 'digit-card bg-gradient-to-br from-purple-50 to-white p-6 rounded-xl shadow-md border-2 border-purple-100';
+          
+          const rankColor = colors[Math.min(index, colors.length - 1)];
+          
+          card.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl" style="background-color: ${rankColor}">
+                  ${item.digit}
+                </div>
+                <div>
+                  <div class="text-sm font-medium" style="color: ${config.text_color || defaultConfig.text_color}">อันดับ ${index + 1}</div>
+                  <div class="text-2xl font-bold" style="color: ${config.primary_action_color || defaultConfig.primary_action_color}">${item.count} ครั้ง</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm" style="color: ${config.text_color || defaultConfig.text_color}">${config.probability_label || defaultConfig.probability_label}</div>
+                <div class="text-xl font-bold" style="color: ${config.primary_action_color || defaultConfig.primary_action_color}">${item.probability}%</div>
+              </div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div class="progress-bar h-full rounded-full transition-all" style="width: ${item.probability}%; background-color: ${rankColor}"></div>
+            </div>
+          `;
+          
+          container.appendChild(card);
+        });
+
+        const leastContainer = document.getElementById('least-likely-container');
+        leastContainer.innerHTML = '';
+        
+        analysis.leastLikelyDigits.forEach((item, index) => {
+          const card = document.createElement('div');
+          card.className = 'digit-card bg-gradient-to-br from-red-50 to-white p-6 rounded-xl shadow-md border-2 border-red-300';
+          
+          card.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl" style="background-color: #dc2626">
+                  ${item.digit}
+                </div>
+                <div>
+                  <div class="text-sm font-medium text-gray-600">อันดับที่น้อย ${index + 1}</div>
+                  <div class="text-2xl font-bold text-red-600">${item.count} ครั้ง</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm text-gray-600">${config.probability_label || defaultConfig.probability_label}</div>
+                <div class="text-xl font-bold text-red-600">${item.probability}%</div>
+              </div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div class="progress-bar h-full rounded-full transition-all" style="width: ${item.probability}%; background-color: #dc2626"></div>
+            </div>
+          `;
+          
+          leastContainer.appendChild(card);
+        });
+      }
+
+      document.getElementById('total-cases').textContent = analysis.totalCases;
+      document.getElementById('date-range').textContent = analysis.dateRange;
+      document.getElementById('most-common').textContent = analysis.topDigits.length > 0 && analysis.totalCases > 0 ? analysis.topDigits[0].digit : '-';
+      document.getElementById('highest-prob').textContent = analysis.topDigits.length > 0 && analysis.totalCases > 0 ? `${analysis.topDigits[0].probability}%` : '0%';
+    }
+
+    function updateDataList() {
+      const dataList = document.getElementById('data-list');
+      const dataCount = document.getElementById('data-count');
+      
+      dataCount.textContent = lotteryData.length;
+      
+      if (lotteryData.length === 0) {
+        dataList.innerHTML = '<div class="text-gray-500 text-center py-4">ยังไม่มีข้อมูล</div>';
+        return;
+      }
+      
+      dataList.innerHTML = lotteryData.map((item, index) => 
+        `<div class="flex justify-between items-center py-2 border-b border-gray-200 hover:bg-gray-100 px-2 rounded">
+          <span class="text-gray-600">${index + 1}.</span>
+          <span>${item.date}</span>
+          <span class="font-bold text-purple-600">${item.number}</span>
+          <span class="font-bold text-green-600">${item.last2}</span>
+        </div>`
+      ).join('');
+    }
+
+    function addLotteryData(date, number, last2) {
+      const exists = lotteryData.some(item => 
+        item.date === date && item.number === number && item.last2 === last2
+      );
+      
+      if (exists) {
+        return false;
+      }
+      
+      lotteryData.unshift({ date, number, last2 });
+      lotteryData.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return true;
+    }
+
+    function clearOldData(beforeDate) {
+      const cutoffDate = new Date(beforeDate);
+      const originalLength = lotteryData.length;
+      lotteryData = lotteryData.filter(item => new Date(item.date) >= cutoffDate);
+      return originalLength - lotteryData.length;
+    }
+
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-semibold z-50 ${type === 'success' ? 'bg-green-500' : 'bg-orange-500'}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function updateSelectedDigitUI(digit) {
+       selectedDigit = digit;
+       document.querySelectorAll('.digit-selector-btn').forEach(b => {
+          b.classList.remove('active', 'bg-purple-600', 'text-white');
+          b.classList.add('bg-gray-200', 'text-gray-800');
+          if (b.dataset.digit === digit) {
+             b.classList.add('active', 'bg-purple-600', 'text-white');
+             b.classList.remove('bg-gray-200', 'text-gray-800');
+          }
+       });
+    }
+
+    async function onConfigChange(config) {
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      const baseSize = config.font_size || defaultConfig.font_size;
+
+      document.getElementById('main-title').textContent = config.main_title || defaultConfig.main_title;
+      document.getElementById('main-title').style.fontFamily = `${customFont}, ${baseFontStack}`;
+      document.getElementById('main-title').style.fontSize = `${baseSize * 2}px`;
+
+      document.getElementById('subtitle').textContent = config.subtitle || defaultConfig.subtitle;
+      document.getElementById('subtitle').style.fontFamily = `${customFont}, ${baseFontStack}`;
+      document.getElementById('subtitle').style.fontSize = `${baseSize * 1.25}px`;
+
+      document.getElementById('results-title').textContent = config.results_title || defaultConfig.results_title;
+      document.getElementById('results-title').style.fontFamily = `${customFont}, ${baseFontStack}`;
+      document.getElementById('results-title').style.fontSize = `${baseSize * 1.5}px`;
+
+      document.querySelector('.w-full.min-h-full > div').style.background = 
+        `linear-gradient(135deg, ${config.background_color || defaultConfig.background_color} 0%, ${config.secondary_action_color || defaultConfig.secondary_action_color} 100%)`;
+
+      renderResults();
+    }
+
+    // Digit selector
+    document.querySelectorAll('.digit-selector-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        updateSelectedDigitUI(btn.dataset.digit);
+        renderResults();
+      });
+    });
+
+    // Form handlers
+    document.getElementById('add-data-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const date = document.getElementById('input-date').value;
+      const number = document.getElementById('input-number').value;
+      const last2 = document.getElementById('input-last2').value;
+      
+      if (!date || !number || !last2) {
+         showToast('กรุณากรอกข้อมูลให้ครบ', 'error');
+         return;
+      }
+
+      if (number.length !== 3 || last2.length !== 2) {
+        showToast('กรุณากรอกเลขให้ครบถ้วน: 3 ตัวบน และ 2 ตัวล่าง', 'error');
+        return;
+      }
+      
+      if (addLotteryData(date, number, last2)) {
+        // Auto select digit from single entry
+        const hundreds = number.charAt(0);
+        updateSelectedDigitUI(hundreds);
+        
+        renderResults();
+        updateDataList();
+        e.target.reset();
+        showToast('✅ เพิ่มข้อมูลสำเร็จ พร้อมคำนวณทันที!');
+
+        // เลื่อนหน้าจอไปที่กรอบเลขที่มีโอกาสน้อยที่สุด ให้อยู่กลางจอ
+        setTimeout(() => {
+            document.getElementById('least-likely-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      } else {
+        showToast('ข้อมูลนี้มีอยู่แล้ว', 'error');
+      }
+    });
+
+    // --- Bulk Processing Logic ---
+    function processBulkInput() {
+      const bulkInput = document.getElementById('bulk-input').value.trim();
+      if (!bulkInput) {
+        return;
+      }
+      
+      const lines = bulkInput.split('\n');
+      let addedCount = 0;
+      
+      lines.forEach(line => {
+        // Handle various separators (tab, space, comma)
+        const parts = line.trim().replace(/,/g, ' ').split(/\s+/);
+        if (parts.length >= 3) {
+          const date = parts[0];
+          const number = parts[1].replace(/'/g, ''); // Remove Excel leading quote
+          const last2 = parts[2].replace(/'/g, '');
+          
+          if (number.length === 3 && last2.length === 2 && /^\d+$/.test(number) && /^\d+$/.test(last2)) {
+            if (addLotteryData(date, number, last2)) {
+              addedCount++;
+            }
+          }
+        }
+      });
+      
+      if (addedCount > 0) {
+        if (lotteryData.length > 0) {
+            const latestEntry = lotteryData[0];
+            const latestHundredsDigit = latestEntry.number.charAt(0);
+            updateSelectedDigitUI(latestHundredsDigit);
+        }
+
+        renderResults();
+        updateDataList();
+        document.getElementById('bulk-input').value = '';
+        showToast(`✅ เพิ่ม ${addedCount} รายการ & คำนวณเลข ${selectedDigit} ทันที!`);
+
+        // เลื่อนหน้าจอไปที่กรอบเลขที่มีโอกาสน้อยที่สุด ให้อยู่กลางจอ
+        setTimeout(() => {
+            document.getElementById('least-likely-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      } else {
+        showToast('ไม่พบข้อมูลใหม่ หรือรูปแบบผิดพลาด', 'error');
+      }
+    }
+
+    // ฟังก์ชันใหม่: ดักจับเหตุการณ์ตอนผู้ใช้วางข้อความ (Paste)
+    document.getElementById('bulk-input').addEventListener('paste', (e) => {
+        // หน่วงเวลาเล็กน้อยเพื่อให้ข้อความลงในช่องเสร็จสมบูรณ์ก่อนเรียกใช้ฟังก์ชันคำนวณ
+        setTimeout(() => {
+            processBulkInput();
+        }, 100);
+    });
+
+    // กด Enter ในช่องข้อความเพื่อทำงาน (ยังคงรักษาฟังก์ชันนี้ไว้)
+    document.getElementById('bulk-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // ป้องกันการขึ้นบรรทัดใหม่
+            processBulkInput();
+        }
+    });
+
+    // Clear old data handlers
+    document.getElementById('clear-old-btn').addEventListener('click', () => {
+      document.getElementById('clear-old-modal').style.display = 'flex';
+    });
+
+    document.getElementById('close-modal-btn').addEventListener('click', () => {
+      document.getElementById('clear-old-modal').style.display = 'none';
+    });
+
+    document.querySelectorAll('.clear-option-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const months = parseInt(btn.dataset.months);
+        const cutoffDate = new Date();
+        cutoffDate.setMonth(cutoffDate.getMonth() - months);
+        
+        const deletedCount = clearOldData(cutoffDate.toISOString().split('T')[0]);
+        
+        if (deletedCount > 0) {
+          renderResults();
+          updateDataList();
+          showToast(`🧹 ลบข้อมูลเก่าสำเร็จ ${deletedCount} รายการ`);
+        } else {
+          showToast('ไม่มีข้อมูลเก่าที่ต้องลบ', 'error');
+        }
+        
+        document.getElementById('clear-old-modal').style.display = 'none';
+      });
+    });
+
+    document.getElementById('clear-custom-btn').addEventListener('click', () => {
+      const customDate = document.getElementById('custom-date').value;
+      if (!customDate) {
+        showToast('กรุณาเลือกวันที่', 'error');
+        return;
+      }
+      
+      const deletedCount = clearOldData(customDate);
+      
+      if (deletedCount > 0) {
+        renderResults();
+        updateDataList();
+        showToast(`🧹 ลบข้อมูลก่อนวันที่ ${customDate} สำเร็จ ${deletedCount} รายการ`);
+      } else {
+        showToast('ไม่มีข้อมูลที่ต้องลบ', 'error');
+      }
+      
+      document.getElementById('clear-old-modal').style.display = 'none';
+    });
+
+    document.getElementById('clear-all-btn').addEventListener('click', () => {
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+      modal.innerHTML = `
+        <div class="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
+          <h3 class="text-2xl font-bold text-red-600 mb-4">⚠️ ยืนยันการลบ</h3>
+          <p class="text-gray-700 mb-6">คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลทั้งหมด?<br>การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+          <div class="flex gap-3">
+            <button id="confirm-delete" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+              ยืนยัน ลบทั้งหมด
+            </button>
+            <button id="cancel-delete" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors">
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      modal.querySelector('#confirm-delete').addEventListener('click', () => {
+        lotteryData = [];
+        renderResults();
+        updateDataList();
+        modal.remove();
+        showToast('🗑️ ลบข้อมูลทั้งหมดสำเร็จ');
+      });
+      
+      modal.querySelector('#cancel-delete').addEventListener('click', () => {
+        modal.remove();
+      });
+    });
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.background_color || defaultConfig.background_color,
+              set: (value) => {
+                config.background_color = value;
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            },
+            {
+              get: () => config.surface_color || defaultConfig.surface_color,
+              set: (value) => {
+                config.surface_color = value;
+                window.elementSdk.setConfig({ surface_color: value });
+              }
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (value) => {
+                config.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            },
+            {
+              get: () => config.primary_action_color || defaultConfig.primary_action_color,
+              set: (value) => {
+                config.primary_action_color = value;
+                window.elementSdk.setConfig({ primary_action_color: value });
+              }
+            },
+            {
+              get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+              set: (value) => {
+                config.secondary_action_color = value;
+                window.elementSdk.setConfig({ secondary_action_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              config.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (value) => {
+              config.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["main_title", config.main_title || defaultConfig.main_title],
+          ["subtitle", config.subtitle || defaultConfig.subtitle],
+          ["results_title", config.results_title || defaultConfig.results_title],
+          ["probability_label", config.probability_label || defaultConfig.probability_label]
+        ])
+      });
+    } else {
+      renderResults();
+      updateDataList();
+    }
+  </script>
+ </body>
+</html>

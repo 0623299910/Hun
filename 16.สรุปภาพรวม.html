@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Lotto Analyzer Pro</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Animation Classes */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 pb-24">
+
+    <div class="bg-white shadow-sm sticky top-0 z-30">
+        <div class="p-4 flex justify-between items-center border-b border-slate-100">
+            <h1 class="text-xl font-bold text-slate-700 flex items-center gap-2">
+                <i data-lucide="calculator" class="w-6 h-6 text-indigo-600"></i>
+                AI หวยแม่นๆ
+            </h1>
+            <button onclick="resetApp()" class="text-xs text-slate-400 flex items-center gap-1 hover:text-red-500 transition">
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i> รีเซ็ต
+            </button>
+        </div>
+        
+        <div class="flex bg-white">
+            <button onclick="switchTab('input')" id="tab-input" class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors border-indigo-500 text-indigo-600">
+                1. ลงข้อมูล
+            </button>
+            <button onclick="switchTab('analyze')" id="tab-analyze" class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors border-transparent text-slate-400">
+                2. วิเคราะห์
+            </button>
+            <button onclick="switchTab('export')" id="tab-export" class="flex-1 py-3 text-sm font-bold border-b-2 transition-colors border-transparent text-slate-400">
+                3. Goodnotes
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto px-4 mt-6 space-y-6">
+
+        <div id="view-input" class="fade-in">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                    วางข้อมูล (Excel/Text)
+                </label>
+                <div class="text-xs text-slate-400 mb-2 bg-slate-50 p-2 rounded border border-slate-100">
+                    รูปแบบ: 2026-01-20 '111 '46 (ก๊อปวางได้เลย)
+                </div>
+                <textarea id="rawInput" class="w-full h-64 p-3 text-sm font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none" placeholder="2026-01-20 '111 '46..."></textarea>
+            </div>
+            <div class="flex gap-3 mt-4">
+                <button onclick="clearInput()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> ล้าง
+                </button>
+                <button onclick="processData()" id="process-btn" class="flex-[2] bg-indigo-600 text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-indigo-700 transition">
+                    <i data-lucide="database" class="w-4 h-4"></i> ประมวลผล
+                </button>
+            </div>
+        </div>
+
+        <div id="view-analyze" class="hidden fade-in space-y-5">
+            
+            <div id="day-selector-container" class="flex overflow-x-auto gap-2 pb-2 hide-scrollbar sticky top-[110px] z-20 bg-slate-50/95 backdrop-blur py-2 -mx-4 px-4 border-b border-slate-100/50">
+                </div>
+
+            <div id="no-data-msg" class="text-center py-12 bg-white rounded-2xl border border-slate-100 hidden">
+                <i data-lucide="info" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+                <p class="text-slate-500" id="no-data-text">ไม่มีข้อมูล</p>
+            </div>
+
+            <div id="stats-content" class="hidden space-y-5">
+                
+                <div class="grid grid-cols-2 gap-3" id="dashboard-grid">
+                    </div>
+
+                <div id="lucky7-card" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 relative overflow-hidden transition-all">
+                    <div id="lucky7-bg-strip" class="absolute top-0 left-0 w-1 h-full bg-slate-300"></div>
+                    <h2 class="font-bold text-lg text-slate-700 mb-3 flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-yellow-500"></i> เลขวิน 7 ตัว
+                    </h2>
+                    <div id="lucky7-numbers" class="flex flex-wrap gap-2 justify-center">
+                        </div>
+                    <p id="lucky7-desc" class="text-center text-[10px] text-slate-400 mt-2">โอกาสมา 1-2 ตัว</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white rounded-xl shadow-sm border border-red-100 p-3 text-center">
+                        <h3 class="text-xs font-bold text-slate-500 mb-1">ดับสิบ</h3>
+                        <div id="dead-tens" class="text-2xl font-black text-red-500">-</div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-red-100 p-3 text-center">
+                        <h3 class="text-xs font-bold text-slate-500 mb-1">ดับหน่วย</h3>
+                        <div id="dead-units" class="text-2xl font-black text-red-500">-</div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-3 text-center flex items-center justify-between px-6">
+                    <h3 class="text-sm font-bold text-slate-500">แต้มดับ</h3>
+                    <div id="dead-sums" class="flex gap-2 text-xl font-black text-slate-700">
+                        </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-4">
+                    <div class="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                            <i data-lucide="clipboard-list" class="w-4 h-4"></i> เช็คย้อนหลัง <span id="history-count">0</span> รอบ
+                        </h3>
+                    </div>
+                    <div class="max-h-80 overflow-y-auto custom-scrollbar">
+                        <table class="w-full text-xs text-left">
+                            <thead class="text-xs text-slate-500 uppercase bg-slate-100 sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-3 py-2 w-20">วันที่</th>
+                                    <th class="px-2 py-2 text-center w-12">ออก</th>
+                                    <th class="px-1 py-2 text-center text-[10px]">วิน</th>
+                                    <th class="px-1 py-2 text-center text-[10px]">ดับส.</th>
+                                    <th class="px-1 py-2 text-center text-[10px]">ดับน.</th>
+                                    <th class="px-1 py-2 text-center text-[10px]">แต้ม</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body">
+                                </tbody>
+                        </table>
+                    </div>
+                    <div class="p-2 bg-slate-50 text-[10px] text-slate-400 text-center">
+                        <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span> = ถูก / <span class="text-red-500 font-bold mr-1">x</span> = ผิด
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 rounded-2xl shadow p-4 text-white mt-4">
+                    <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-700">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-orange-400"></i>
+                            <h2 class="font-bold text-sm">คู่ดับ (ไม่เคยมาเลย)</h2>
+                        </div>
+                        <span id="global-count-badge" class="text-[10px] bg-white/10 px-2 py-0.5 rounded text-white/70">
+                            -
+                        </span>
+                    </div>
+                    <div class="h-24 overflow-y-auto custom-scrollbar pr-2">
+                        <p id="global-pairs-text" class="text-xs text-slate-400 leading-relaxed font-mono">
+                            -
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="view-export" class="hidden fade-in">
+             <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 text-center">
+                <h2 class="text-lg font-bold text-slate-700 mb-1">คัดลอกสรุปผล</h2>
+                <p class="text-xs text-slate-400 mb-4">สำหรับ Goodnotes / Line / Notes</p>
+                
+                <div id="export-day-selector" class="flex justify-center gap-2 mb-4 flex-wrap">
+                    </div>
+
+                <div class="relative group">
+                    <textarea id="export-textarea" readonly class="w-full h-64 p-4 text-sm font-mono bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none resize-none"></textarea>
+                    <button onclick="copyToClipboard()" id="copy-btn" class="absolute bottom-4 right-4 bg-slate-800 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 hover:bg-black transition-all active:scale-95">
+                        <i data-lucide="copy" class="w-4 h-4"></i> คัดลอก
+                    </button>
+                </div>
+             </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- State ---
+        let rawData = [];
+        let globalDeadPairs = [];
+        let selectedDay = new Date().getDay();
+        let currentStats = null;
+        
+        const daysTh = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+        const colors = [
+            "bg-red-500", "bg-yellow-400", "bg-pink-400", "bg-green-500", 
+            "bg-orange-400", "bg-blue-400", "bg-purple-500"
+        ];
+        
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderDaySelectors();
+            
+            // ดักจับการวาง (Paste) ข้อมูล
+            const rawInput = document.getElementById('rawInput');
+            rawInput.addEventListener('paste', () => {
+                setTimeout(() => {
+                    if (rawInput.value.trim() !== '') {
+                        processData();
+                    }
+                }, 50); // หน่วงเวลาเล็กน้อยเพื่อให้ข้อความลงใน textarea
+            });
+        });
+
+        // --- Functions ---
+
+        function switchTab(tabName) {
+            // Update Tab Buttons
+            ['input', 'analyze', 'export'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tabName) {
+                    btn.classList.replace('border-transparent', 'border-indigo-500');
+                    btn.classList.replace('text-slate-400', 'text-indigo-600');
+                } else {
+                    btn.classList.replace('border-indigo-500', 'border-transparent');
+                    btn.classList.replace('text-indigo-600', 'text-slate-400');
+                }
+                
+                // Show/Hide View
+                const view = document.getElementById(`view-${t}`);
+                if (t === tabName) view.classList.remove('hidden');
+                else view.classList.add('hidden');
+            });
+        }
+
+        function clearInput() {
+            document.getElementById('rawInput').value = '';
+            rawData = [];
+            globalDeadPairs = [];
+            currentStats = null;
+            document.getElementById('stats-content').classList.add('hidden');
+            document.getElementById('export-textarea').value = 'เลือกวันที่มีข้อมูลก่อน';
+            alert('ล้างข้อมูลเรียบร้อย');
+        }
+
+        function resetApp() {
+            if(confirm('ต้องการรีเซ็ตระบบทั้งหมดหรือไม่?')) {
+                location.reload();
+            }
+        }
+
+        function processData() {
+            const input = document.getElementById('rawInput').value;
+            if (!input.trim()) { alert("กรุณาวางข้อมูลก่อน"); return; }
+
+            try {
+                const lines = input.trim().split('\n');
+                rawData = lines.map(line => {
+                    const parts = line.trim().split(/\t|\s+/);
+                    if (parts.length >= 3) {
+                        const dateStr = parts[0];
+                        const bottomStr = parts[2].replace(/'/g, '').trim();
+                        if (!bottomStr || isNaN(bottomStr)) return null;
+                        return {
+                            date: dateStr,
+                            dayIndex: new Date(dateStr).getDay(),
+                            bottom: bottomStr
+                        };
+                    }
+                    return null;
+                }).filter(item => item !== null);
+
+                if (rawData.length === 0) { throw new Error("No valid data"); }
+
+                calculateGlobalDeadPairs();
+                calculateDailyStats(selectedDay);
+                switchTab('analyze'); // สลับไปหน้าวิเคราะห์อัตโนมัติ
+
+            } catch (e) {
+                alert("รูปแบบข้อมูลไม่ถูกต้อง กรุณาตรวจสอบ");
+                console.error(e);
+            }
+        }
+
+        function calculateGlobalDeadPairs() {
+            const seenPairs = new Set();
+            rawData.forEach(item => seenPairs.add(item.bottom));
+            globalDeadPairs = [];
+            for (let i = 0; i < 100; i++) {
+                const pairStr = i.toString().padStart(2, '0');
+                if (!seenPairs.has(pairStr)) globalDeadPairs.push(pairStr);
+            }
+        }
+
+        function findLeastFrequent(freqArray) {
+            const minVal = Math.min(...freqArray);
+            return freqArray
+                .map((freq, digit) => ({ digit, freq }))
+                .filter(item => item.freq === minVal)
+                .map(item => ({ digit: item.digit, count: item.freq }));
+        }
+
+        function calculateDailyStats(dayIndex) {
+            selectedDay = dayIndex;
+            renderDaySelectors(); // Update active state
+
+            const dayData = rawData.filter(d => d.dayIndex === dayIndex);
+            
+            // UI Toggle if no data
+            const noDataMsg = document.getElementById('no-data-msg');
+            const statsContent = document.getElementById('stats-content');
+            
+            if (dayData.length === 0) {
+                noDataMsg.classList.remove('hidden');
+                document.getElementById('no-data-text').innerText = `ไม่มีข้อมูลของวัน${daysTh[dayIndex]}`;
+                statsContent.classList.add('hidden');
+                currentStats = null;
+                renderExport();
+                return;
+            }
+
+            noDataMsg.classList.add('hidden');
+            statsContent.classList.remove('hidden');
+
+            // Calculation Logic
+            const frequencies = Array(10).fill(0);
+            const tensFreq = Array(10).fill(0);
+            const unitsFreq = Array(10).fill(0);
+            const sumFreq = Array(10).fill(0);
+
+            dayData.forEach(item => {
+                const t = parseInt(item.bottom[0]);
+                const u = parseInt(item.bottom[1]);
+                const s = (t + u) % 10;
+                frequencies[t]++; frequencies[u]++;
+                tensFreq[t]++; unitsFreq[u]++; sumFreq[s]++;
+            });
+
+            // Strategies
+            const lucky7 = frequencies.map((f, i) => ({d: i, f})).sort((a, b) => b.f - a.f).slice(0, 7).map(o => o.d).sort((a,b) => a-b);
+            const deadTens = findLeastFrequent(tensFreq);
+            const deadUnits = findLeastFrequent(unitsFreq);
+            const deadSums = findLeastFrequent(sumFreq);
+
+            // Backtest
+            let perf = { lucky7: 0, deadTens: 0, deadUnits: 0, deadSums: 0 };
+            
+            const history = dayData.map(d => {
+                const t = parseInt(d.bottom[0]);
+                const u = parseInt(d.bottom[1]);
+                const s = (t + u) % 10;
+
+                const isL7 = lucky7.includes(t) || lucky7.includes(u); // Win if at least 1 digit matches
+                const isDT = !deadTens.some(x => x.digit === t);
+                const isDU = !deadUnits.some(x => x.digit === u);
+                const isDS = !deadSums.some(x => x.digit === s);
+
+                if (isL7) perf.lucky7++;
+                if (isDT) perf.deadTens++;
+                if (isDU) perf.deadUnits++;
+                if (isDS) perf.deadSums++;
+
+                return { ...d, status: { lucky7: isL7, deadTens: isDT, deadUnits: isDU, deadSums: isDS } };
+            });
+
+            currentStats = {
+                lucky7, deadTens, deadUnits, deadSums,
+                total: dayData.length,
+                perf,
+                history
+            };
+
+            renderUI();
+            renderExport();
+        }
+
+        // --- Rendering ---
+
+        function renderDaySelectors() {
+            const html = daysTh.map((d, i) => `
+                <button onclick="calculateDailyStats(${i})" 
+                    class="flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all border ${selectedDay === i ? `${colors[i]} text-white border-transparent shadow-md scale-105` : 'bg-white text-slate-500 border-slate-200'}">
+                    ${d}
+                </button>
+            `).join('');
+            
+            document.getElementById('day-selector-container').innerHTML = html;
+            
+            // Export selector (smaller)
+            const exportHtml = daysTh.map((d, i) => `
+                <button onclick="calculateDailyStats(${i})" 
+                    class="w-8 h-8 rounded-full text-xs font-bold transition-all border ${selectedDay === i ? `${colors[i]} text-white border-transparent` : 'bg-slate-100 text-slate-400 border-transparent'}">
+                    ${d[0]}
+                </button>
+            `).join('');
+            document.getElementById('export-day-selector').innerHTML = exportHtml;
+        }
+
+        function renderUI() {
+            if (!currentStats) return;
+
+            // 1. Dashboard Cards
+            const createCard = (title, correct, total, icon, color) => {
+                const pct = ((correct / total) * 100).toFixed(0);
+                const isHigh = pct >= 90;
+                const barColor = pct == 100 ? 'bg-green-500' : (pct >= 50 ? 'bg-orange-500' : 'bg-red-500');
+                const textColor = pct >= 90 ? 'text-green-500' : 'text-orange-500';
+
+                return `
+                <div class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 rounded-lg ${color.replace('text-', 'bg-').replace('600', '100')} bg-opacity-20">
+                                <i data-lucide="${icon}" class="w-4 h-4 ${color}"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600">${title}</span>
+                        </div>
+                        <span class="text-xs font-bold ${textColor}">${pct}%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-100 rounded-full mb-2 overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-500 ${barColor}" style="width: ${pct}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px] text-slate-400">
+                        <span>ถูก ${correct}</span>
+                        <span class="${pct < 100 ? 'text-red-400 font-bold' : ''}">ผิด ${total - correct}</span>
+                    </div>
+                </div>`;
+            };
+
+            const dbHTML = 
+                createCard("เลขวิน 7 ตัว", currentStats.perf.lucky7, currentStats.total, "sparkles", "text-yellow-500") +
+                createCard("สูตรดับสิบ", currentStats.perf.deadTens, currentStats.total, "ban", "text-red-500") +
+                createCard("สูตรดับหน่วย", currentStats.perf.deadUnits, currentStats.total, "ban", "text-red-500") +
+                createCard("สูตรดับแต้ม", currentStats.perf.deadSums, currentStats.total, "trending-up", "text-blue-500");
+            
+            document.getElementById('dashboard-grid').innerHTML = dbHTML;
+
+            // 2. Lucky 7
+            document.getElementById('lucky7-bg-strip').className = `absolute top-0 left-0 w-1 h-full ${colors[selectedDay]}`;
+            document.getElementById('lucky7-numbers').innerHTML = currentStats.lucky7.map(n => 
+                `<div class="w-10 h-10 rounded-full ${colors[selectedDay]} text-white font-bold text-xl flex items-center justify-center shadow-md border-2 border-white">${n}</div>`
+            ).join('');
+            document.getElementById('lucky7-desc').innerText = `โอกาสมา 1-2 ตัว (ถูก ${currentStats.perf.lucky7} รอบ)`;
+
+            // 3. Dead Numbers
+            document.getElementById('dead-tens').innerText = currentStats.deadTens.map(x => x.digit).join(' - ') || '-';
+            document.getElementById('dead-units').innerText = currentStats.deadUnits.map(x => x.digit).join(' - ') || '-';
+
+            // 4. Dead Sums
+            document.getElementById('dead-sums').innerHTML = currentStats.deadSums.length > 0 
+                ? currentStats.deadSums.map(x => `<span class="bg-slate-100 w-8 h-8 rounded flex items-center justify-center">${x.digit}</span>`).join('') 
+                : '<span class="text-xs text-slate-400">ไม่มี</span>';
+
+            // 5. History Table
+            document.getElementById('history-count').innerText = currentStats.history.length;
+            const historyHTML = currentStats.history.map(row => {
+                const check = `<div class="w-2 h-2 rounded-full bg-green-500 mx-auto"></div>`;
+                const cross = `<span class="text-red-500 font-bold">x</span>`;
+                return `
+                <tr class="border-b border-slate-50 hover:bg-slate-50">
+                    <td class="px-3 py-2 font-mono text-slate-500 text-[10px]">${row.date}</td>
+                    <td class="px-2 py-2 text-center font-bold text-base text-slate-800 bg-white border-x border-slate-100">${row.bottom}</td>
+                    <td class="px-1 py-2 text-center">${row.status.lucky7 ? check : cross}</td>
+                    <td class="px-1 py-2 text-center">${row.status.deadTens ? check : cross}</td>
+                    <td class="px-1 py-2 text-center">${row.status.deadUnits ? check : cross}</td>
+                    <td class="px-1 py-2 text-center">${row.status.deadSums ? check : cross}</td>
+                </tr>`;
+            }).join('');
+            document.getElementById('history-body').innerHTML = historyHTML;
+
+            // 6. Global Dead Pairs
+            document.getElementById('global-count-badge').innerText = `วิเคราะห์จาก ${rawData.length} งวด`;
+            document.getElementById('global-pairs-text').innerText = globalDeadPairs.length > 0 
+                ? globalDeadPairs.join('  ') 
+                : "ไม่มีคู่ดับ (ออกมาครบแล้วทุกคู่)";
+
+            lucide.createIcons();
+        }
+
+        function renderExport() {
+            const textarea = document.getElementById('export-textarea');
+            if (!currentStats) {
+                textarea.value = `ยังไม่มีข้อมูลสำหรับวัน${daysTh[selectedDay]}`;
+                return;
+            }
+
+            const pL7 = ((currentStats.perf.lucky7 / currentStats.total) * 100).toFixed(0);
+            const pDT = ((currentStats.perf.deadTens / currentStats.total) * 100).toFixed(0);
+            const pDU = ((currentStats.perf.deadUnits / currentStats.total) * 100).toFixed(0);
+            const pDS = ((currentStats.perf.deadSums / currentStats.total) * 100).toFixed(0);
+            
+            const l7 = currentStats.lucky7.join('');
+            const dT = currentStats.deadTens.map(d => d.digit).join('');
+            const dU = currentStats.deadUnits.map(d => d.digit).join('');
+            const dS = currentStats.deadSums.map(d => d.digit).join('');
+
+            const txt = `📅 สรุปหุ้น/หวย วัน${daysTh[selectedDay]} 
+(สถิติย้อนหลัง ${currentStats.total} รอบ)
+
+✅ วิน 7 ตัว: ${l7} (มา 1-2 ตัว: ${pL7}%)
+-------------------------
+⛔ ดับสิบ: ${dT || '-'} (${pDT}%)
+⛔ ดับหน่วย: ${dU || '-'} (${pDU}%)
+⛔ แต้มดับ: ${dS || '-'} (${pDS}%)
+-------------------------
+💀 คู่ดับ (จาก ${rawData.length} งวด): 
+${globalDeadPairs.slice(0, 10).join(' ')}${globalDeadPairs.length > 10 ? '...' : ''}
+`;
+            textarea.value = txt;
+        }
+
+        function copyToClipboard() {
+            const copyText = document.getElementById("export-textarea");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                const btn = document.getElementById('copy-btn');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = `<i data-lucide="check" class="w-4 h-4 text-green-400"></i> เรียบร้อย`;
+                lucide.createIcons();
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    lucide.createIcons();
+                }, 2000);
+            });
+        }
+
+    </script>
+</body>
+</html>

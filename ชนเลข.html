@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เทียบชนเลขเด่น - Enter Version</title>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background: #fdfbf7; padding: 20px; color: #444; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-top: 5px solid #ffca28; }
+        
+        h2 { text-align: center; color: #5d4037; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #a1887f; font-size: 0.9em; margin-bottom: 30px; }
+
+        .input-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;
+        }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+        .input-box {
+            width: 100%; padding: 15px; font-size: 1.5em; text-align: center;
+            border: 2px solid #eee; border-radius: 12px; letter-spacing: 5px;
+            font-family: monospace; transition: 0.3s; box-sizing: border-box;
+            background: #fafafa;
+        }
+        .input-box:focus { border-color: #ffca28; outline: none; background: white; box-shadow: 0 0 8px rgba(255, 202, 40, 0.2); }
+
+        .btn-group { display: flex; gap: 15px; margin-bottom: 30px; }
+        button {
+            flex: 1; padding: 15px; border: none; border-radius: 10px;
+            font-size: 1.1em; font-weight: bold; cursor: pointer;
+            transition: 0.2s; color: white;
+        }
+        button:active { transform: scale(0.98); }
+        
+        .btn-compare { background: linear-gradient(135deg, #ffca28 0%, #ff6f00 100%); }
+        .btn-clear { background: #cfd8dc; color: #546e7a; }
+
+        .result-area { display: none; }
+        .set-display {
+            background: #fcfcfc; border: 1px solid #f0f0f0; border-radius: 15px;
+            padding: 20px; margin-bottom: 15px;
+        }
+        .set-label { font-size: 0.85em; color: #aaa; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; }
+        .ball-container { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        
+        .ball {
+            width: 45px; height: 45px; line-height: 45px; text-align: center;
+            border-radius: 50%; font-size: 1.2em; font-weight: bold; transition: 0.3s;
+        }
+        .ball.nomatch { background: #eceff1; color: #b0bec5; border: 1px solid #cfd8dc; transform: scale(0.9); }
+        .ball.match { background: linear-gradient(135deg, #ffca28, #ff6f00); color: white; transform: scale(1.15); box-shadow: 0 4px 10px rgba(255, 111, 0, 0.3); border: 2px solid white; z-index: 10; }
+
+        .summary-box { background: #fff8e1; border: 2px dashed #ffca28; border-radius: 15px; padding: 20px; text-align: center; margin-top: 20px; }
+        .match-count { font-size: 1.1em; color: #ff6f00; font-weight: bold; }
+        .match-list { font-size: 2.5em; font-weight: bold; color: #3e2723; letter-spacing: 8px; margin-top: 10px; }
+
+        @media (max-width: 600px) {
+            .input-grid { grid-template-columns: 1fr; }
+            .ball { width: 38px; height: 38px; line-height: 38px; font-size: 1.1em; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>⚡ เทียบชนเลขเด่น (Enter) ⚡</h2>
+    <p class="subtitle">พิมพ์เลขแล้วกดปุ่ม <b>Enter</b> เพื่อคำนวณทันที</p>
+
+    <div class="input-grid">
+        <div class="input-group">
+            <label>📌 ชุดตัวเลขที่ 1</label>
+            <input type="text" id="set1" class="input-box" placeholder="0123..." maxlength="15" onkeypress="handleEnter(event)">
+        </div>
+        <div class="input-group">
+            <label>📌 ชุดตัวเลขที่ 2</label>
+            <input type="text" id="set2" class="input-box" placeholder="4567..." maxlength="15" onkeypress="handleEnter(event)">
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-compare" onclick="compareSets()">🔍 เปรียบเทียบ (Enter)</button>
+        <button class="btn-clear" onclick="clearData()">🧹 เคลียร์หน้าจอ</button>
+    </div>
+
+    <div id="resultArea" class="result-area">
+        <div class="set-display">
+            <div class="set-label">การวิเคราะห์ชุดที่ 1</div>
+            <div id="displaySet1" class="ball-container"></div>
+        </div>
+
+        <div class="set-display">
+            <div class="set-label">การวิเคราะห์ชุดที่ 2</div>
+            <div id="displaySet2" class="ball-container"></div>
+        </div>
+
+        <div class="summary-box">
+            <div class="match-count">🔥 ชนกันทั้งหมด <span id="countVal">0</span> ตัว 🔥</div>
+            <div id="matchVal" class="match-list">--</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ฟังก์ชันตรวจจับการกดปุ่ม Enter
+    function handleEnter(event) {
+        if (event.key === "Enter") {
+            compareSets();
+        }
+    }
+
+    function clearData() {
+        document.getElementById('set1').value = '';
+        document.getElementById('set2').value = '';
+        document.getElementById('resultArea').style.display = 'none';
+        document.getElementById('set1').focus();
+    }
+
+    function compareSets() {
+        let val1 = document.getElementById('set1').value.replace(/[^0-9]/g, '');
+        let val2 = document.getElementById('set2').value.replace(/[^0-9]/g, '');
+
+        if(val1.length === 0 || val2.length === 0) {
+            return; // ไม่ทำงานถ้าข้อมูลว่าง
+        }
+
+        let arr1 = val1.split('');
+        let arr2 = val2.split('');
+        
+        let unique1 = [...new Set(arr1)];
+        let unique2 = [...new Set(arr2)];
+
+        let matches = unique1.filter(x => unique2.includes(x)).sort();
+
+        renderBalls(arr1, matches, 'displaySet1');
+        renderBalls(arr2, matches, 'displaySet2');
+
+        document.getElementById('countVal').innerText = matches.length;
+        if(matches.length > 0) {
+            document.getElementById('matchVal').innerText = matches.join(' ');
+        } else {
+            document.getElementById('matchVal').innerText = "ไม่ชน";
+        }
+
+        document.getElementById('resultArea').style.display = 'block';
+        
+        // เลิกโฟกัสช่องกรอกเพื่อให้คีย์บอร์ดในมือถือยุบลง
+        document.activeElement.blur();
+    }
+
+    function renderBalls(numbers, matches, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        numbers.forEach(num => {
+            let div = document.createElement('div');
+            div.innerText = num;
+            div.className = matches.includes(num) ? 'ball match' : 'ball nomatch';
+            container.appendChild(div);
+        });
+    }
+</script>
+
+</body>
+</html>
