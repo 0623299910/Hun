@@ -32,7 +32,7 @@ export const legacyTools: LegacyTool[] = [
   },
   {
     slug: "005-three-pair-formulas",
-    title: "5. คู่ดับสามสูตร",
+    title: "5. คู่ดับ 3 สูตรตรงๆ",
     fileName: "5.คู่ดับสามสูตร.html",
     description: "คำนวณคู่ดับจาก 3 สูตร",
   },
@@ -44,13 +44,13 @@ export const legacyTools: LegacyTool[] = [
   },
   {
     slug: "007-five-plus-one",
-    title: "7. ดับ5คู่บวก1",
+    title: "7. ดับ 7 ตัวชุดที่ 1",
     fileName: "7.ดับ5คู่บวก1.html",
     description: "สูตรดับ 5 คู่ + 1",
   },
   {
     slug: "008-cross-polarity",
-    title: "8. คู่ข้ามขั้ว",
+    title: "8. ดับตรงๆชุดที่ 1",
     fileName: "8.คู่ข้ามขั้ว.html",
     description: "สูตรคู่ข้ามขั้ว",
   },
