@@ -13,12 +13,12 @@ body {
 }
 
 body {
-  font-family: var(--font-body), sans-serif;
+  font-family: 'Noto Sans Thai', 'Sarabun', 'Leelawadee UI', 'Tahoma', sans-serif;
 }
 
 h1,
 h2,
 h3,
 .font-display {
-  font-family: var(--font-display), sans-serif;
+  font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', 'Sarabun', 'Leelawadee UI', 'Tahoma', sans-serif;
 }
