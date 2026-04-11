@@ -145,7 +145,7 @@ function triggerLegacyCalculation(root: HTMLElement): void {
   ] as const;
 
   for (const fnName of fnNames) {
-    const candidate = (window as Window & Record<string, unknown>)[fnName];
+    const candidate = (window as unknown as Record<string, unknown>)[fnName];
     if (typeof candidate !== "function") {
       continue;
     }
