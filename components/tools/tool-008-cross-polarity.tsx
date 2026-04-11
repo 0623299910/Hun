@@ -48,7 +48,7 @@ export default function Tool008CrossPolarity() {
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <ToolShell title="คู่ข้ามขั้ว" minEntries={3}>
+    <ToolShell title="ดับตรงๆชุดที่ 2" minEntries={3}>
       {({ data, localInput, setLocalInput, showToast }) => {
         const allResults = Array.from({ length: 10 }, (_, i) => calcFormula(i + 1, data));
         const active = allResults[activeTab];

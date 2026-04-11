@@ -64,7 +64,7 @@ const calcAccuracy = (data: ParsedEntry[], logicFn: (d: ParsedEntry[]) => number
 export default function Tool007FivePlusOne() {
   const [activeFormula, setActiveFormula] = useState(0);
   return (
-    <ToolShell title="ดับ5คู่บวก1" minEntries={10}>
+    <ToolShell title="ดับ 7 ตัวชุดที่ 1" minEntries={10}>
       {({ data, localInput, setLocalInput, showToast }) => {
         const results = formulas.map((f) => {
           const digits = f.fn(data).sort((a, b) => a - b);

@@ -30,7 +30,7 @@ function compute(data: ParsedEntry[]) {
 
 export default function Tool005ThreePairFormulas() {
   return (
-    <ToolShell title="คู่ดับสามสูตร" minEntries={3}>
+    <ToolShell title="คู่ดับตรงๆ 3 สูตร" minEntries={3}>
       {({ data, localInput, setLocalInput, showToast }) => {
         const result = compute(data);
         return (
