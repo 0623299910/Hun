@@ -1,9 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useGlobalHistory } from "@/components/data-context";
-import { legacyTools } from "@/lib/tools";
+import { legacyTools, type LegacyTool } from "@/lib/tools";
+
+const TOOL_ORDER_KEY = "hun.toolOrder";
 
 function GlobalHistoryPanel() {
   const { historyText, setHistoryText, saveHistory, clearHistory, lineCount } = useGlobalHistory();
@@ -47,6 +50,50 @@ function GlobalHistoryPanel() {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [order, setOrder] = useState<string[]>(() => legacyTools.map((t) => t.slug));
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(TOOL_ORDER_KEY);
+    if (!saved) return;
+    try {
+      const parsed: string[] = JSON.parse(saved);
+      const validSet = new Set(legacyTools.map((t) => t.slug));
+      const currentSlugs = legacyTools.map((t) => t.slug);
+      const reordered = [
+        ...parsed.filter((s) => validSet.has(s)),
+        ...currentSlugs.filter((s) => !parsed.includes(s)),
+      ];
+      setOrder(reordered);
+    } catch {}
+  }, []);
+
+  const sortedTools = order
+    .map((slug) => legacyTools.find((t) => t.slug === slug))
+    .filter(Boolean) as LegacyTool[];
+
+  function handleDragStart(idx: number) {
+    setDraggingIdx(idx);
+  }
+
+  function handleDragEnter(idx: number) {
+    if (draggingIdx === null || draggingIdx === idx) return;
+    setOrder((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(draggingIdx, 1);
+      next.splice(idx, 0, item);
+      return next;
+    });
+    setDraggingIdx(idx);
+  }
+
+  function handleDragEnd() {
+    setOrder((current) => {
+      localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(current));
+      return current;
+    });
+    setDraggingIdx(null);
+  }
 
   return (
     <aside className="sticky top-0 flex h-screen flex-col w-full border-r border-ink/10 bg-haze/90 p-4 backdrop-blur md:w-80">
@@ -72,10 +119,18 @@ export function Sidebar() {
               🏠 หน้าหลัก
             </Link>
           </li>
-          {legacyTools.map((tool) => {
+          {sortedTools.map((tool, idx) => {
             const active = pathname === `/tool/${tool.slug}`;
             return (
-              <li key={tool.slug}>
+              <li
+                key={tool.slug}
+                draggable
+                onDragStart={() => handleDragStart(idx)}
+                onDragEnter={() => handleDragEnter(idx)}
+                onDragOver={(e) => e.preventDefault()}
+                onDragEnd={handleDragEnd}
+                className={`cursor-grab active:cursor-grabbing ${draggingIdx === idx ? "opacity-50" : ""}`}
+              >
                 <Link
                   href={`/tool/${tool.slug}`}
                   className={`block rounded-xl px-3 py-2.5 text-sm leading-snug transition ${

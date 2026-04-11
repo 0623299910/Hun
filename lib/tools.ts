@@ -79,12 +79,6 @@ export const legacyTools: LegacyTool[] = [
     description: "สูตรดับตรงรุ่น v2",
   },
   {
-    slug: "013-direct-cut",
-    title: "13. ดับตรงๆ",
-    fileName: "13.ดับตรงๆ.html",
-    description: "สูตรดับตรงรุ่นหลัก",
-  },
-  {
     slug: "014-seven-bottom-three",
     title: "14. เจ็ดตัวล่างสูตรสาม",
     fileName: "14.เจ็ดตัวล่างสูตรสาม.html",
