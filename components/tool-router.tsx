@@ -39,6 +39,8 @@ const componentMap: Record<string, ComponentType> = {
   "029-point-dead": dynamic(() => import("./tools/tool-029-point-dead")),
   "030-tens-dead": dynamic(() => import("./tools/tool-030-tens-dead")),
   "031-units-dead": dynamic(() => import("./tools/tool-031-units-dead")),
+  "032-single-dead-16": dynamic(() => import("./tools/tool-032-single-dead-16")),
+  "033-pair-dead-8": dynamic(() => import("./tools/tool-033-pair-dead-8")),
 };
 
 export function ToolRouter({ slug }: { slug: string }) {

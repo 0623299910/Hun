@@ -204,6 +204,18 @@ export const legacyTools: LegacyTool[] = [
     fileName: "",
     description: "ทำนายหลักหน่วยล่าง (0-9) ที่ไม่ควรมา 3 สูตร",
   },
+  {
+    slug: "032-single-dead-16",
+    title: "32. รวมสูตรดับตัวเดียว 16 สูตร",
+    fileName: "",
+    description: "รวม 16 สูตรดับตัวเดียว พร้อมเทียบผลย้อนหลังและฉันทามติ",
+  },
+  {
+    slug: "033-pair-dead-8",
+    title: "33. คู่ดับ 8 คู่ (จาก 16 สูตร)",
+    fileName: "",
+    description: "จับคู่สูตรดับตัวเดียว 16 สูตร เป็นคู่ดับ 2 ตัวล่าง 8 คู่ พร้อมเทียบย้อนหลัง",
+  },
 ];
 
 export const toolMap = new Map(legacyTools.map((tool) => [tool.slug, tool]));
