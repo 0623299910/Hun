@@ -188,9 +188,9 @@ export const legacyTools: LegacyTool[] = [
   },
   {
     slug: "029-point-dead",
-    title: "29. ดับแต้มล่าง",
+    title: "29. ดับคู่ล่างตรงๆ5คู่",
     fileName: "",
-    description: "ทำนายแต้มล่าง (0-9) ที่ไม่ควรมา 3 สูตร",
+    description: "ปักหลักสิบ 5 สูตร × ปักหลักหน่วย 5 สูตร → คู่ดับล่าง 5 คู่",
   },
   {
     slug: "030-tens-dead",
