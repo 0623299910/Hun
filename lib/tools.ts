@@ -222,6 +222,18 @@ export const legacyTools: LegacyTool[] = [
     fileName: "",
     description: "เลือกสูตรใดก็ได้ 2 สูตรจาก 16 สูตรมาจับคู่เป็นคู่ดับ 2 ตัวล่าง พร้อมสถิติย้อนหลัง",
   },
+  {
+    slug: "035-combined-point-dead",
+    title: "35. รวมดับแต้ม",
+    fileName: "",
+    description: "รวม 15 สูตรดับแต้ม พร้อมสถิติย้อนหลังและฉันทามติ",
+  },
+  {
+    slug: "036-featured-8",
+    title: "36. รวมสูตรเลขเด่น 8 ตัว",
+    fileName: "",
+    description: "รวม 10 สูตรเลขเด่น 8 ตัว (ไม่ซ้ำ) พร้อมสถิติย้อนหลัง 30 งวด",
+  },
 ];
 
 export const toolMap = new Map(legacyTools.map((tool) => [tool.slug, tool]));
