@@ -216,6 +216,12 @@ export const legacyTools: LegacyTool[] = [
     fileName: "",
     description: "จับคู่สูตรดับตัวเดียว 16 สูตร เป็นคู่ดับ 2 ตัวล่าง 8 คู่ พร้อมเทียบย้อนหลัง",
   },
+  {
+    slug: "034-custom-pair-dead",
+    title: "34. คู่ดับ 2 ตัวล่าง — เลือกสูตรเองได้",
+    fileName: "",
+    description: "เลือกสูตรใดก็ได้ 2 สูตรจาก 16 สูตรมาจับคู่เป็นคู่ดับ 2 ตัวล่าง พร้อมสถิติย้อนหลัง",
+  },
 ];
 
 export const toolMap = new Map(legacyTools.map((tool) => [tool.slug, tool]));
