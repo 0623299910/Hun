@@ -234,6 +234,12 @@ export const legacyTools: LegacyTool[] = [
     fileName: "",
     description: "รวม 10 สูตรเลขเด่น 8 ตัว (ไม่ซ้ำ) พร้อมสถิติย้อนหลัง 30 งวด",
   },
+  {
+    slug: "037-mega-dead",
+    title: "37. MEGA รวมสูตรดับทุกรูปแบบ",
+    fileName: "",
+    description: "127 สูตรดับใน 6 หมวด — ดับตัวเดียว คู่ดับ แต้ม หลักสิบ หน่วย พร้อมสรุปข้ามหมวด",
+  },
 ];
 
 export const toolMap = new Map(legacyTools.map((tool) => [tool.slug, tool]));
