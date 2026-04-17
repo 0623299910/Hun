@@ -240,6 +240,12 @@ export const legacyTools: LegacyTool[] = [
     fileName: "",
     description: "127 สูตรดับใน 6 หมวด — ดับตัวเดียว คู่ดับ แต้ม หลักสิบ หน่วย พร้อมสรุปข้ามหมวด",
   },
+  {
+    slug: "038-compare-tens-pin",
+    title: "38. เทียบปักหลักสิบ",
+    fileName: "",
+    description: "เลขเด่นหลักสิบ 9 ตัว — 2 ชุด × 10 สูตร (ไม่ซ้ำกัน) จัดอันดับเดินดี + สถิติย้อนหลัง 20 งวด",
+  },
 ];
 
 export const toolMap = new Map(legacyTools.map((tool) => [tool.slug, tool]));

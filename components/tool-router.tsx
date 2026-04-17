@@ -45,6 +45,7 @@ const componentMap: Record<string, ComponentType> = {
   "035-combined-point-dead": dynamic(() => import("./tools/tool-035-combined-point-dead")),
   "036-featured-8": dynamic(() => import("./tools/tool-036-featured-8")),
   "037-mega-dead": dynamic(() => import("./tools/tool-037-mega-dead")),
+  "038-compare-tens-pin": dynamic(() => import("./tools/tool-038-compare-tens-pin")),
 };
 
 export function ToolRouter({ slug }: { slug: string }) {
