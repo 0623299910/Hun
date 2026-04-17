@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { ToolShell, DataInput } from "@/components/tool-shell";
 import { type ParsedEntry, d, copyText } from "@/lib/data-parser";
 
@@ -53,12 +53,21 @@ function Tool001Inner({
     data.length > 0 ? data[data.length - 1].top.charAt(0) : "0"
   );
   const [userSelected, setUserSelected] = useState(false);
+  const leastLikelyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!userSelected && data.length > 0) {
       setSelectedDigit(data[data.length - 1].top.charAt(0));
     }
   }, [data, userSelected]);
+
+  useEffect(() => {
+    if (data.length > 0 && leastLikelyRef.current) {
+      setTimeout(() => {
+        leastLikelyRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
+    }
+  }, [data]);
 
   const analysis = analyzePatterns(data, selectedDigit);
   return (
@@ -149,7 +158,7 @@ function Tool001Inner({
                   </div>
 
                   {/* Least likely */}
-                  <div className="border-t-2 border-gray-200 pt-4">
+                  <div ref={leastLikelyRef} className="border-t-2 border-gray-200 pt-4">
                     <h3 className="mb-3 text-center text-lg font-bold text-red-600">
                       ⚠️ เลขที่มีโอกาสน้อยที่สุด 2 อันดับ
                     </h3>

@@ -37,7 +37,7 @@ function calcFormulaV9(id: number, entry: ParsedEntry, prev?: ParsedEntry): stri
 }
 
 export default function Tool011DirectCutV9() {
-  const [tab, setTab] = useState<"input" | "summary" | number>("input");
+  const [tab, setTab] = useState<"input" | "summary" | number>("summary");
 
   return (
     <ToolShell title="ดับตรงๆ4 (V9)" minEntries={2}>

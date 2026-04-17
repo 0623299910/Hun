@@ -8,7 +8,7 @@ import { type ParsedEntry, d, mod10, copyText } from "@/lib/data-parser";
    ─────────────────────────────────────────────────
    แต่ละสูตรให้เลข 0-9 จำนวน 8 ตัว (ไม่ซ้ำกัน)
    ที่คาดว่าจะปรากฏในเลข 2 ตัวล่าง (ทั้งหลักสิบและหลักหน่วย)
-   ผ่าน = หลักสิบล่าง AND หลักหน่วยล่าง อยู่ใน 8 ตัวที่เลือก
+   ผ่าน = หลักสิบล่าง OR หลักหน่วยล่าง อยู่ใน 8 ตัวที่เลือก (ถูก 1-2 ตัว = ผ่าน, ผิดทั้ง 2 = ไม่ผ่าน)
    พร้อมสถิติย้อนหลัง 30 งวดล่าสุด
    ═══════════════════════════════════════════════════════════════ */
 
@@ -250,7 +250,7 @@ function compute(data: ParsedEntry[]): ComputeResult | null {
       const nextT = d(data[i + 1].bottom, 0);
       const nextU = d(data[i + 1].bottom, 1);
       total++;
-      if (p.includes(nextT) && p.includes(nextU)) pass++;
+      if (p.includes(nextT) || p.includes(nextU)) pass++;
     }
 
     return {
@@ -280,7 +280,7 @@ function compute(data: ParsedEntry[]): ComputeResult | null {
       const p = pickTop8(s);
       const nextT = d(data[i + 1].bottom, 0);
       const nextU = d(data[i + 1].bottom, 1);
-      return { picks: p, pass: p.includes(nextT) && p.includes(nextU) };
+      return { picks: p, pass: p.includes(nextT) || p.includes(nextU) };
     });
     const passCount = results.filter((r) => r.pass).length;
     history.push({
@@ -516,7 +516,7 @@ function Results({
             📅 สถิติย้อนหลัง 30 งวดล่าสุด — 8 ตัวเด่นของแต่ละสูตร
           </h3>
           <p className="mt-0.5 text-[10px] text-ink/40">
-            🟢 เขียว = 8 ตัวครอบทั้งหลักสิบ+หน่วย &nbsp;|&nbsp; 🔴 แดง = พลาด (ผลจริงหลุดออกนอก 8 ตัว)
+            🟢 เขียว = 8 ตัวครอบทั้งหลักสิบ+หน่วย &nbsp;|&nbsp; � เหลือง = ถูก 1 ตัว &nbsp;|&nbsp; 🔴 แดง = พลาด (ผลจริงหลุดทั้ง 2 ตัว)
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -545,9 +545,9 @@ function Results({
                     {h.results.map((r, fi) => {
                       const tIn = r.picks.includes(bottomT);
                       const uIn = r.picks.includes(bottomU);
-                      const pass = tIn && uIn;
+                      const hitCount = (tIn ? 1 : 0) + (uIn ? 1 : 0);
                       return (
-                        <td key={fi} className={`px-1 py-1.5 ${pass ? "bg-emerald-50" : "bg-red-50/50"}`}>
+                        <td key={fi} className={`px-1 py-1.5 ${hitCount === 2 ? "bg-emerald-50" : hitCount === 1 ? "bg-yellow-50" : "bg-red-50/50"}`}>
                           <div className="flex flex-wrap justify-center gap-[2px]">
                             {r.picks.map((p) => {
                               const hit = p === bottomT || p === bottomU;

@@ -43,22 +43,24 @@ export default function Tool002LowProbability() {
         const result = analyze(data);
         return (
           <div className="space-y-4">
+            {result && (
+              <div className="rounded-xl border-2 border-red-200 bg-red-50 p-6 text-center animate-[fadeIn_0.5s_ease-out]">
+                <span className="text-sm text-ink/60">
+                  เลขเด่น (0-9) ที่มีโอกาสมาน้อยที่สุดใน 2 ตัวล่าง
+                </span>
+                <div className="my-2 text-5xl font-extrabold tracking-wider text-red-600">
+                  {result.stats[0].num} และ {result.stats[1].num}
+                </div>
+                <small className="text-ink/50">
+                  *วิเคราะห์จากฐานข้อมูล {result.totalDraws} งวดล่าสุด
+                </small>
+              </div>
+            )}
+
             <DataInput value={localInput} onChange={setLocalInput} />
 
             {result && (
               <div className="animate-[fadeIn_0.5s_ease-out] space-y-4">
-                {/* Dead digits */}
-                <div className="rounded-xl border-2 border-red-200 bg-red-50 p-6 text-center">
-                  <span className="text-sm text-ink/60">
-                    เลขเด่น (0-9) ที่มีโอกาสมาน้อยที่สุดใน 2 ตัวล่าง
-                  </span>
-                  <div className="my-2 text-5xl font-extrabold tracking-wider text-red-600">
-                    {result.stats[0].num} และ {result.stats[1].num}
-                  </div>
-                  <small className="text-ink/50">
-                    *วิเคราะห์จากฐานข้อมูล {result.totalDraws} งวดล่าสุด
-                  </small>
-                </div>
 
                 {/* Table */}
                 <div className="overflow-hidden rounded-lg border border-ink/10 bg-white">

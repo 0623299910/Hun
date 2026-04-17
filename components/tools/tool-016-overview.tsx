@@ -13,7 +13,7 @@ function findLeast(freq: number[]) {
 
 export default function Tool016Overview() {
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
-  const [tab, setTab] = useState<"analyze" | "export">("analyze");
+  const [tab, setTab] = useState<"analyze" | "export">("export");
 
   return (
     <ToolShell title="สรุปภาพรวม" minEntries={3}>
