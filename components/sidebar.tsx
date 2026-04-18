@@ -52,6 +52,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const [order, setOrder] = useState<string[]>(() => legacyTools.map((t) => t.slug));
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(TOOL_ORDER_KEY);
@@ -71,6 +72,24 @@ export function Sidebar() {
   const sortedTools = order
     .map((slug) => legacyTools.find((t) => t.slug === slug))
     .filter(Boolean) as LegacyTool[];
+
+  function saveOrder(next: string[]) {
+    localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(next));
+    setOrder(next);
+  }
+
+  function moveItem(idx: number, dir: -1 | 1) {
+    const next = [...order];
+    const target = idx + dir;
+    if (target < 0 || target >= next.length) return;
+    [next[idx], next[target]] = [next[target], next[idx]];
+    saveOrder(next);
+  }
+
+  function resetOrder() {
+    const defaults = legacyTools.map((t) => t.slug);
+    saveOrder(defaults);
+  }
 
   function handleDragStart(idx: number) {
     setDraggingIdx(idx);
@@ -105,7 +124,30 @@ export function Sidebar() {
       <GlobalHistoryPanel />
 
       <nav className="min-h-0 flex-1 overflow-y-auto pr-1">
-        <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-ink/55">สารบัญเครื่องมือ ({legacyTools.length})</p>
+        <div className="mb-2 flex items-center justify-between px-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink/55">สารบัญเครื่องมือ ({legacyTools.length})</p>
+          <div className="flex gap-1">
+            {editMode && (
+              <button
+                onClick={resetOrder}
+                className="rounded-lg border border-ink/20 bg-white px-2 py-1 text-[10px] font-semibold text-ink/60 hover:bg-coral/20 transition"
+                title="รีเซ็ตกลับค่าเดิม"
+              >
+                รีเซ็ต
+              </button>
+            )}
+            <button
+              onClick={() => setEditMode((v) => !v)}
+              className={`rounded-lg px-2 py-1 text-[10px] font-semibold transition ${
+                editMode
+                  ? "bg-ink text-white"
+                  : "border border-ink/20 bg-white text-ink/60 hover:bg-gold/25"
+              }`}
+            >
+              {editMode ? "✓ เสร็จ" : "✏️ จัดลำดับ"}
+            </button>
+          </div>
+        </div>
         <ul className="space-y-1.5">
           <li>
             <Link
@@ -124,23 +166,45 @@ export function Sidebar() {
             return (
               <li
                 key={tool.slug}
-                draggable
-                onDragStart={() => handleDragStart(idx)}
-                onDragEnter={() => handleDragEnter(idx)}
+                draggable={!editMode}
+                onDragStart={() => !editMode && handleDragStart(idx)}
+                onDragEnter={() => !editMode && handleDragEnter(idx)}
                 onDragOver={(e) => e.preventDefault()}
-                onDragEnd={handleDragEnd}
-                className={`cursor-grab active:cursor-grabbing ${draggingIdx === idx ? "opacity-50" : ""}`}
+                onDragEnd={() => !editMode && handleDragEnd()}
+                className={`${!editMode ? "cursor-grab active:cursor-grabbing" : ""} ${draggingIdx === idx ? "opacity-50" : ""}`}
               >
-                <Link
-                  href={`/tool/${tool.slug}`}
-                  className={`block rounded-xl px-3 py-2.5 text-sm leading-snug transition ${
-                    active
-                      ? "bg-ink text-white shadow-soft"
-                      : "bg-white/80 text-ink hover:bg-coral/20"
-                  }`}
-                >
-                  {tool.title}
-                </Link>
+                {editMode ? (
+                  <div className="flex items-center gap-1.5 rounded-xl bg-white/80 px-3 py-2 text-sm leading-snug text-ink">
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        onClick={() => moveItem(idx, -1)}
+                        disabled={idx === 0}
+                        className="flex h-5 w-5 items-center justify-center rounded bg-ink/10 text-[10px] font-bold hover:bg-pine/30 disabled:opacity-20 transition"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        onClick={() => moveItem(idx, 1)}
+                        disabled={idx === sortedTools.length - 1}
+                        className="flex h-5 w-5 items-center justify-center rounded bg-ink/10 text-[10px] font-bold hover:bg-pine/30 disabled:opacity-20 transition"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                    <span className="flex-1 text-xs">{tool.title}</span>
+                  </div>
+                ) : (
+                  <Link
+                    href={`/tool/${tool.slug}`}
+                    className={`block rounded-xl px-3 py-2.5 text-sm leading-snug transition ${
+                      active
+                        ? "bg-ink text-white shadow-soft"
+                        : "bg-white/80 text-ink hover:bg-coral/20"
+                    }`}
+                  >
+                    {tool.title}
+                  </Link>
+                )}
               </li>
             );
           })}
