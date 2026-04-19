@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { ToolShell, DataInput } from "@/components/tool-shell";
 import { type ParsedEntry, d, mod10, copyText } from "@/lib/data-parser";
+import { FORMULAS_16 as FORMULAS } from "./shared-formulas-16";
 
 /* ═══════════════════════════════════════════════════════════════
    34. คู่ดับ 2 ตัวล่าง — เลือกเองได้ (จาก 16 สูตร)
@@ -10,34 +11,6 @@ import { type ParsedEntry, d, mod10, copyText } from "@/lib/data-parser";
    ผ่าน = เขียว 1-2 ตัว หรือเลขเบิ้ล
    ไม่ผ่าน = แดงทั้งสองตัว (ยกเว้นเบิ้ล)
    ═══════════════════════════════════════════════════════════════ */
-
-type Fn = (dt: ParsedEntry[], i: number) => number;
-
-interface FormulaDef {
-  id: number;
-  name: string;
-  desc: string;
-  fn: Fn;
-}
-
-const FORMULAS: FormulaDef[] = [
-  /* 1 */  { id: 1,  name: "ผลรวม 3 ตัวบน",      desc: "(ร้อย+สิบ+หน่วย) mod 10",              fn: (dt, i) => mod10(d(dt[i].top, 0) + d(dt[i].top, 1) + d(dt[i].top, 2)) },
-  /* 2 */  { id: 2,  name: "กระจกหลักร้อย",        desc: "9 − หลักร้อย",                          fn: (dt, i) => mod10(9 - d(dt[i].top, 0)) },
-  /* 3 */  { id: 3,  name: "ร้อย+หน่วย บน",        desc: "(ร้อย + หน่วยบน) mod 10",               fn: (dt, i) => mod10(d(dt[i].top, 0) + d(dt[i].top, 2)) },
-  /* 4 */  { id: 4,  name: "|ร้อย−สิบ| บน",        desc: "|หลักร้อย − หลักสิบ|",                  fn: (dt, i) => Math.abs(d(dt[i].top, 0) - d(dt[i].top, 1)) },
-  /* 5 */  { id: 5,  name: "แต้มล่าง",              desc: "(สิบ+หน่วย) ล่าง mod 10",               fn: (dt, i) => mod10(d(dt[i].bottom, 0) + d(dt[i].bottom, 1)) },
-  /* 6 */  { id: 6,  name: "กระจกแต้มล่าง",         desc: "9 − แต้มล่าง",                          fn: (dt, i) => mod10(9 - mod10(d(dt[i].bottom, 0) + d(dt[i].bottom, 1))) },
-  /* 7 */  { id: 7,  name: "สิบล่าง ×2",            desc: "หลักสิบล่าง × 2 mod 10",                fn: (dt, i) => mod10(d(dt[i].bottom, 0) * 2) },
-  /* 8 */  { id: 8,  name: "|สิบ−หน่วย| ล่าง",     desc: "|หลักสิบ − หลักหน่วย| ล่าง",            fn: (dt, i) => Math.abs(d(dt[i].bottom, 0) - d(dt[i].bottom, 1)) },
-  /* 9 */  { id: 9,  name: "หน่วยบน+หน่วยล่าง",    desc: "(หน่วยบน + หน่วยล่าง) mod 10",          fn: (dt, i) => mod10(d(dt[i].top, 2) + d(dt[i].bottom, 1)) },
-  /* 10 */ { id: 10, name: "ร้อย×หน่วย บน",         desc: "(ร้อย × หน่วยบน) mod 10",               fn: (dt, i) => mod10(d(dt[i].top, 0) * d(dt[i].top, 2)) },
-  /* 11 */ { id: 11, name: "ร้อย+แต้มล่าง",         desc: "(ร้อย + แต้มล่าง) mod 10",              fn: (dt, i) => mod10(d(dt[i].top, 0) + d(dt[i].bottom, 0) + d(dt[i].bottom, 1)) },
-  /* 12 */ { id: 12, name: "ผลรวม 5 หลัก",          desc: "Σ(ร+ส+ห+สL+หL) mod 10",                fn: (dt, i) => mod10(d(dt[i].top, 0) + d(dt[i].top, 1) + d(dt[i].top, 2) + d(dt[i].bottom, 0) + d(dt[i].bottom, 1)) },
-  /* 13 */ { id: 13, name: "ร้อย 2 งวดรวม",         desc: "(ร้อยนี้ + ร้อยก่อน) mod 10",           fn: (dt, i) => i < 1 ? mod10(d(dt[i].top, 0) * 2) : mod10(d(dt[i].top, 0) + d(dt[i - 1].top, 0)) },
-  /* 14 */ { id: 14, name: "หน่วยบน 2 งวดรวม",      desc: "(หน่วยนี้ + หน่วยก่อน) mod 10",         fn: (dt, i) => i < 1 ? mod10(d(dt[i].top, 2) * 2) : mod10(d(dt[i].top, 2) + d(dt[i - 1].top, 2)) },
-  /* 15 */ { id: 15, name: "แต้ม 2 งวดรวม",          desc: "(แต้มนี้ + แต้มก่อน) mod 10",           fn: (dt, i) => { const p1 = mod10(d(dt[i].bottom, 0) + d(dt[i].bottom, 1)); if (i < 1) return mod10(p1 * 2); const p2 = mod10(d(dt[i - 1].bottom, 0) + d(dt[i - 1].bottom, 1)); return mod10(p1 + p2); } },
-  /* 16 */ { id: 16, name: "|ΣTop−ΣBot|",            desc: "|ผลรวมบน − ผลรวมล่าง| mod 10",          fn: (dt, i) => { const st = d(dt[i].top, 0) + d(dt[i].top, 1) + d(dt[i].top, 2); const sb = d(dt[i].bottom, 0) + d(dt[i].bottom, 1); return mod10(Math.abs(st - sb)); } },
-];
 
 /* ─── types ─── */
 interface HistoryRow {

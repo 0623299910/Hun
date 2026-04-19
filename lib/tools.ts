@@ -43,12 +43,6 @@ export const legacyTools: LegacyTool[] = [
     description: "โหมดคำนวณสามเขียว",
   },
   {
-    slug: "007-five-plus-one",
-    title: "7. ดับ 7 ตัวชุดที่ 1",
-    fileName: "7.ดับ5คู่บวก1.html",
-    description: "สูตรดับ 5 คู่ + 1",
-  },
-  {
     slug: "008-cross-polarity",
     title: "8. ดับตรงๆชุดที่ 1",
     fileName: "8.คู่ข้ามขั้ว.html",
@@ -191,18 +185,6 @@ export const legacyTools: LegacyTool[] = [
     title: "29. ดับคู่ล่างตรงๆ5คู่",
     fileName: "",
     description: "ปักหลักสิบ 5 สูตร × ปักหลักหน่วย 5 สูตร → คู่ดับล่าง 5 คู่",
-  },
-  {
-    slug: "030-tens-dead",
-    title: "30. ดับหลักสิบล่าง",
-    fileName: "",
-    description: "ทำนายหลักสิบล่าง (0-9) ที่ไม่ควรมา 3 สูตร",
-  },
-  {
-    slug: "031-units-dead",
-    title: "31. ดับหลักหน่วยล่าง",
-    fileName: "",
-    description: "ทำนายหลักหน่วยล่าง (0-9) ที่ไม่ควรมา 3 สูตร",
   },
   {
     slug: "032-single-dead-16",
