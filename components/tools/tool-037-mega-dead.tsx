@@ -517,7 +517,7 @@ function PairSection({ result, showToast }: { result: { pairs: PairResult[]; all
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 p-4 text-white shadow-lg">
+      <div className="rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-500 p-4 text-white shadow-lg">
         <div className="mb-2 text-xs font-bold uppercase tracking-wider opacity-80">🎯 คู่ดับ 2 ตัวล่าง {result.pairs.length} คู่</div>
         <div className="flex flex-wrap gap-3">
           {result.pairs.map((p) => (
@@ -546,7 +546,7 @@ function PairSection({ result, showToast }: { result: { pairs: PairResult[]; all
 
       <button
         onClick={() => { copyText(result.allPairText); showToast("คัดลอก: " + result.allPairText); }}
-        className="w-full rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 py-2.5 text-center text-sm font-bold text-white shadow-lg transition hover:shadow-xl active:scale-[0.98]"
+        className="w-full rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 py-2.5 text-center text-sm font-bold text-white shadow-lg transition hover:shadow-xl active:scale-[0.98]"
       >
         📋 คัดลอกคู่ดับทั้ง {result.pairs.length} คู่
       </button>

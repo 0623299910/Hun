@@ -138,6 +138,15 @@ export default function Tool014SevenBottomThree() {
                         </button>
                       ))}
                     </div>
+                    <button
+                      onClick={() => {
+                        const txt = perfectResults.map((r) => `${r.name}: ${r.missing.join(" ")}`).join("   ");
+                        copyText(txt).then(() => showToast("คัดลอกสูตรแม่น 100% ทั้งหมด"));
+                      }}
+                      className="mt-2 w-full rounded-lg bg-green-700 px-3 py-2 text-sm font-bold text-white shadow hover:bg-green-800 transition"
+                    >
+                      📋 คัดลอกทั้งหมด (แนวนอน)
+                    </button>
                   </div>
                 )}
 

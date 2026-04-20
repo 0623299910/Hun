@@ -209,6 +209,12 @@ export default function Tool003AllInOne() {
                           <span key={d} className="flex h-12 w-12 items-center justify-center rounded-full bg-red-600 text-2xl font-black text-white shadow">{d}</span>
                         ))}
                       </div>
+                      <button
+                        onClick={() => { copyText(bottom3.sort((a, b) => a - b).join(" ")); showToast("คัดลอกเลขดับ 3 ตัว"); }}
+                        className="mt-3 w-full rounded-lg bg-red-600 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                      >
+                        📋 คัดลอก
+                      </button>
                     </div>
 
                     {/* Scores table */}

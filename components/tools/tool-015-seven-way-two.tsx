@@ -132,26 +132,64 @@ export default function Tool015SevenWayTwo() {
                 )}
 
                 {activeTab === "stats" && stats.length > 0 && (
-                  <div className="overflow-auto rounded-lg border" style={{ maxHeight: 500 }}>
-                    <table className="w-full text-xs">
-                      <thead className="sticky top-0 bg-gray-50">
-                        <tr className="border-b font-bold text-center">
-                          <th className="p-2">#</th><th className="p-2 text-left">สูตร</th><th className="p-2">ถูก</th><th className="p-2">ถูก 2 ตัว</th><th className="p-2">ทั้งหมด</th><th className="p-2">%</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stats.map((s, i) => (
-                          <tr key={s.id} className={`border-b text-center hover:bg-gray-50 ${i < 3 ? "bg-green-50" : ""}`}>
-                            <td className="p-2 font-bold">{s.id}</td>
-                            <td className="p-2 text-left">{s.name}</td>
-                            <td className="p-2 font-bold text-green-600">{s.hits}</td>
-                            <td className="p-2 font-bold text-blue-600">{s.twoHits}</td>
-                            <td className="p-2">{s.total}</td>
-                            <td className="p-2 font-bold">{s.total > 0 ? ((s.hits / s.total) * 100).toFixed(0) : 0}%</td>
+                  <div className="space-y-3">
+                    {/* 100% formulas highlight */}
+                    {(() => {
+                      const perfectStats = stats.filter((s) => s.hits === s.total && s.total > 0);
+                      if (perfectStats.length === 0) return null;
+                      return (
+                        <div className="rounded-xl border-2 border-green-200 bg-green-50 p-4">
+                          <h3 className="mb-2 font-bold text-green-800">✨ สูตรที่แม่น 100% ({perfectStats.length} สูตร)</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {perfectStats.map((s) => {
+                              const nums = currentFormulas.find((f) => f.id === s.id)?.numbers ?? [];
+                              return (
+                                <button
+                                  key={s.id}
+                                  onClick={() => { copyText(nums.join(" ")); showToast(`คัดลอกสูตร ${s.id}: ${nums.join(" ")}`); }}
+                                  className="rounded-lg bg-green-600 px-3 py-2 text-sm font-bold text-white shadow hover:bg-green-700 transition"
+                                >
+                                  สูตร {s.id}: {nums.join(" ")}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <button
+                            onClick={() => {
+                              const txt = perfectStats.map((s) => {
+                                const nums = currentFormulas.find((f) => f.id === s.id)?.numbers ?? [];
+                                return `สูตร${s.id}(${s.name}): ${nums.join(" ")}`;
+                              }).join("   ");
+                              copyText(txt).then(() => showToast("คัดลอกสูตรแม่น 100% ทั้งหมด"));
+                            }}
+                            className="mt-2 w-full rounded-lg bg-green-700 px-3 py-2 text-sm font-bold text-white shadow hover:bg-green-800 transition"
+                          >
+                            📋 คัดลอกทั้งหมด (แนวนอน)
+                          </button>
+                        </div>
+                      );
+                    })()}
+                    <div className="overflow-auto rounded-lg border" style={{ maxHeight: 500 }}>
+                      <table className="w-full text-xs">
+                        <thead className="sticky top-0 bg-gray-50">
+                          <tr className="border-b font-bold text-center">
+                            <th className="p-2">#</th><th className="p-2 text-left">สูตร</th><th className="p-2">ถูก</th><th className="p-2">ถูก 2 ตัว</th><th className="p-2">ทั้งหมด</th><th className="p-2">%</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {stats.map((s, i) => (
+                            <tr key={s.id} className={`border-b text-center hover:bg-gray-50 ${i < 3 ? "bg-green-50" : ""}`}>
+                              <td className="p-2 font-bold">{s.id}</td>
+                              <td className="p-2 text-left">{s.name}</td>
+                              <td className="p-2 font-bold text-green-600">{s.hits}</td>
+                              <td className="p-2 font-bold text-blue-600">{s.twoHits}</td>
+                              <td className="p-2">{s.total}</td>
+                              <td className="p-2 font-bold">{s.total > 0 ? ((s.hits / s.total) * 100).toFixed(0) : 0}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>
