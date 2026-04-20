@@ -140,7 +140,7 @@ export default function Tool014SevenBottomThree() {
                     </div>
                     <button
                       onClick={() => {
-                        const txt = perfectResults.map((r) => `${r.name}: ${r.missing.join(" ")}`).join("   ");
+                        const txt = perfectResults.map((r) => r.missing.join(" ")).join("   ");
                         copyText(txt).then(() => showToast("คัดลอกสูตรแม่น 100% ทั้งหมด"));
                       }}
                       className="mt-2 w-full rounded-lg bg-green-700 px-3 py-2 text-sm font-bold text-white shadow hover:bg-green-800 transition"

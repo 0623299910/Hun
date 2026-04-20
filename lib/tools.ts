@@ -228,6 +228,12 @@ export const legacyTools: LegacyTool[] = [
     fileName: "",
     description: "เลขเด่นหลักสิบ 9 ตัว — 2 ชุด × 10 สูตร (ไม่ซ้ำกัน) จัดอันดับเดินดี + สถิติย้อนหลัง 20 งวด",
   },
+  {
+    slug: "039-parity-pair-dead",
+    title: "39. ดับล่าง คู่-คี่",
+    fileName: "",
+    description: "15 สูตรดับคู่ล่าง — คู่+คู่ 5 สูตร / คี่+คี่ 5 สูตร / คู่+คี่ 5 สูตร",
+  },
 ];
 
 export const toolMap = new Map(legacyTools.map((tool) => [tool.slug, tool]));
