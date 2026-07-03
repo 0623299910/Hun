@@ -19,12 +19,6 @@ export const legacyTools: LegacyTool[] = [
     description: "หาเลขที่โอกาสออกน้อยจากสถิติ",
   },
   {
-    slug: "003-all-in-one",
-    title: "3. all in one",
-    fileName: "3.all in one.html",
-    description: "รวมหลายสูตรไว้ในหน้าเดียว",
-  },
-  {
     slug: "004-hell-pairs",
     title: "4. คู่ดับนรกแตก",
     fileName: "4.คู่ดับนรกแตก.html",
@@ -71,12 +65,6 @@ export const legacyTools: LegacyTool[] = [
     title: "12. ดับตรงๆ v2",
     fileName: "12.ดับตรงๆ v2.html",
     description: "สูตรดับตรงรุ่น v2",
-  },
-  {
-    slug: "014-seven-bottom-three",
-    title: "14. เจ็ดตัวล่างสูตรสาม",
-    fileName: "14.เจ็ดตัวล่างสูตรสาม.html",
-    description: "คำนวณ 7 ตัวล่างจาก 3 สูตร",
   },
   {
     slug: "015-seven-way-two",
@@ -145,42 +133,6 @@ export const legacyTools: LegacyTool[] = [
     description: "สถิติรวมทุกสูตร",
   },
   {
-    slug: "023-parity-gap",
-    title: "23. คู่ดับคู่-คี่ Gap",
-    fileName: "",
-    description: "วิเคราะห์คู่ดับจากรูปแบบคู่-คี่ + ช่วง gap",
-  },
-  {
-    slug: "024-mirror-dead",
-    title: "24. คู่ดับกระจก",
-    fileName: "",
-    description: "สร้างคู่ดับจากภาพกระจก 9-complement หลายมุม",
-  },
-  {
-    slug: "025-chain-break",
-    title: "25. คู่ดับโซ่ขาด",
-    fileName: "",
-    description: "วิเคราะห์โซ่ตัวเลขต่อเนื่องเพื่อหาจุดขาด",
-  },
-  {
-    slug: "026-digit-sum-pos",
-    title: "26. คู่ดับผลรวมตำแหน่ง",
-    fileName: "",
-    description: "รวมเลขข้ามตำแหน่งหลายงวดด้วย carry-drop",
-  },
-  {
-    slug: "027-rotation-dead",
-    title: "27. คู่ดับหมุนวน",
-    fileName: "",
-    description: "หมุนตำแหน่งตัวเลขเป็นวงกลมหา dead zone",
-  },
-  {
-    slug: "028-fibonacci-dead",
-    title: "28. คู่ดับฟีโบนัชชี",
-    fileName: "",
-    description: "ใช้ลำดับ Fibonacci/Lucas เป็น offset ดับ",
-  },
-  {
     slug: "029-point-dead",
     title: "29. ดับคู่ล่างตรงๆ5คู่",
     fileName: "",
@@ -205,22 +157,10 @@ export const legacyTools: LegacyTool[] = [
     description: "เลือกสูตรใดก็ได้ 2 สูตรจาก 16 สูตรมาจับคู่เป็นคู่ดับ 2 ตัวล่าง พร้อมสถิติย้อนหลัง",
   },
   {
-    slug: "035-combined-point-dead",
-    title: "35. รวมดับแต้ม",
-    fileName: "",
-    description: "รวม 15 สูตรดับแต้ม พร้อมสถิติย้อนหลังและฉันทามติ",
-  },
-  {
     slug: "036-featured-8",
     title: "36. รวมสูตรเลขเด่น 8 ตัว",
     fileName: "",
     description: "รวม 10 สูตรเลขเด่น 8 ตัว (ไม่ซ้ำ) พร้อมสถิติย้อนหลัง 30 งวด",
-  },
-  {
-    slug: "037-mega-dead",
-    title: "37. MEGA รวมสูตรดับทุกรูปแบบ",
-    fileName: "",
-    description: "127 สูตรดับใน 6 หมวด — ดับตัวเดียว คู่ดับ แต้ม หลักสิบ หน่วย พร้อมสรุปข้ามหมวด",
   },
   {
     slug: "038-compare-tens-pin",
@@ -233,6 +173,12 @@ export const legacyTools: LegacyTool[] = [
     title: "39. ดับล่าง คู่-คี่",
     fileName: "",
     description: "15 สูตรดับคู่ล่าง — คู่+คู่ 5 สูตร / คี่+คี่ 5 สูตร / คู่+คี่ 5 สูตร",
+  },
+  {
+    slug: "040-featured-7",
+    title: "40. สูตรเด่นเจ็ดตัว",
+    fileName: "",
+    description: "12 สูตรเลขเด่น 7 ตัว (ไม่ซ้ำ) — ถูก = สองตัวล่างครอบ 1-2 ตัว | สถิติย้อนหลัง 25 งวด",
   },
 ];
 
