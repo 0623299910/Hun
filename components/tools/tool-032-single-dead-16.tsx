@@ -310,6 +310,22 @@ function Results({
                   สูตร 1→16 (เขียว=ถูก แดง=พลาด)
                 </th>
               </tr>
+              <tr className="bg-gray-100/70 border-b border-ink/10">
+                <th colSpan={3} />
+                <th className="px-2 py-1 text-left font-normal">
+                  <div className="flex flex-wrap gap-[3px]">
+                    {FORMULAS.map((f, fi) => (
+                      <span
+                        key={fi}
+                        title={`#${fi + 1} ${f.name}: ${f.desc}`}
+                        className="inline-flex h-5 w-5 cursor-help items-center justify-center rounded bg-gray-200 text-[9px] font-bold text-ink/60 hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
+                      >
+                        {fi + 1}
+                      </span>
+                    ))}
+                  </div>
+                </th>
+              </tr>
             </thead>
             <tbody>
               {result.history.map((h) => {

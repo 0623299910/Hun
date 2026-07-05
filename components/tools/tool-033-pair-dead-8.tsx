@@ -119,9 +119,7 @@ function compute(data: ParsedEntry[]): ComputeResult | null {
     });
   }
 
-  const allPairsText = pairs
-    .map((p) => `คู่${p.pairNo}:[${p.d1}${p.d2}]`)
-    .join("  ");
+  const allPairsText = pairs.map((p) => `${p.d1}${p.d2}`).join(" ");
   const avgPct = pairs.reduce((s, p) => s + p.pct, 0) / pairs.length;
 
   return { pairs, history, allPairsText, avgPct };

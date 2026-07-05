@@ -7,6 +7,17 @@ import { useGlobalHistory } from "@/components/data-context";
 import { legacyTools, type LegacyTool } from "@/lib/tools";
 
 const TOOL_ORDER_KEY = "hun.toolOrder";
+const TOOL_COLOR_KEY = "hun.toolColors";
+
+const COLOR_PRESETS = [
+  { label: "ค่าเริ่มต้น", value: "" },
+  { label: "เหลือง", value: "#fef08a" },
+  { label: "เขียว", value: "#bbf7d0" },
+  { label: "ฟ้า", value: "#bae6fd" },
+  { label: "ชมพู", value: "#fda4af" },
+  { label: "ม่วง", value: "#d8b4fe" },
+  { label: "ส้ม", value: "#fed7aa" },
+];
 
 function GlobalHistoryPanel() {
   const { historyText, setHistoryText, saveHistory, clearHistory, lineCount } = useGlobalHistory();
@@ -48,6 +59,24 @@ export function Sidebar() {
   const [order, setOrder] = useState<string[]>(() => legacyTools.map((t) => t.slug));
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const [toolColors, setToolColors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const savedColors = localStorage.getItem(TOOL_COLOR_KEY);
+    if (savedColors) {
+      try { setToolColors(JSON.parse(savedColors)); } catch {}
+    }
+  }, []);
+
+  function setColor(slug: string, color: string) {
+    setToolColors((prev) => {
+      const next = { ...prev };
+      if (color) next[slug] = color;
+      else delete next[slug];
+      localStorage.setItem(TOOL_COLOR_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
 
   useEffect(() => {
     const saved = localStorage.getItem(TOOL_ORDER_KEY);
@@ -164,24 +193,45 @@ export function Sidebar() {
                 className={`${!editMode ? "cursor-grab active:cursor-grabbing" : ""} ${draggingIdx === idx ? "opacity-50" : ""}`}
               >
                 {editMode ? (
-                  <div className="flex items-center gap-1.5 rounded-xl bg-white/80 px-3 py-2 text-sm leading-snug text-ink">
-                    <div className="flex flex-col gap-0.5">
-                      <button
-                        onClick={() => moveItem(idx, -1)}
-                        disabled={idx === 0}
-                        className="flex h-5 w-5 items-center justify-center rounded bg-ink/10 text-[10px] font-bold hover:bg-pine/30 disabled:opacity-20 transition"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() => moveItem(idx, 1)}
-                        disabled={idx === sortedTools.length - 1}
-                        className="flex h-5 w-5 items-center justify-center rounded bg-ink/10 text-[10px] font-bold hover:bg-pine/30 disabled:opacity-20 transition"
-                      >
-                        ↓
-                      </button>
+                  <div
+                    className="rounded-xl px-3 py-2 text-sm leading-snug text-ink border border-ink/10"
+                    style={{ backgroundColor: toolColors[tool.slug] || "rgba(255,255,255,0.8)" }}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex flex-col gap-0.5">
+                        <button
+                          onClick={() => moveItem(idx, -1)}
+                          disabled={idx === 0}
+                          className="flex h-5 w-5 items-center justify-center rounded bg-ink/10 text-[10px] font-bold hover:bg-pine/30 disabled:opacity-20 transition"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          onClick={() => moveItem(idx, 1)}
+                          disabled={idx === sortedTools.length - 1}
+                          className="flex h-5 w-5 items-center justify-center rounded bg-ink/10 text-[10px] font-bold hover:bg-pine/30 disabled:opacity-20 transition"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                      <span className="flex-1 text-xs">{tool.title}</span>
                     </div>
-                    <span className="flex-1 text-xs">{tool.title}</span>
+                    <div className="mt-1.5 flex items-center gap-1">
+                      <span className="text-[9px] text-ink/40">สี:</span>
+                      {COLOR_PRESETS.map((preset) => (
+                        <button
+                          key={preset.value || "default"}
+                          title={preset.label}
+                          onClick={() => setColor(tool.slug, preset.value)}
+                          className={`h-4 w-4 rounded-full border-2 transition hover:scale-110 ${
+                            (toolColors[tool.slug] || "") === preset.value
+                              ? "border-ink/70 scale-110"
+                              : "border-ink/20 hover:border-ink/50"
+                          }`}
+                          style={{ backgroundColor: preset.value || "#e5e7eb" }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <Link
@@ -189,8 +239,11 @@ export function Sidebar() {
                     className={`block rounded-xl px-3 py-2.5 text-sm leading-snug transition ${
                       active
                         ? "bg-ink text-white shadow-soft"
+                        : toolColors[tool.slug]
+                        ? "text-ink hover:opacity-80"
                         : "bg-white/80 text-ink hover:bg-coral/20"
                     }`}
+                    style={!active && toolColors[tool.slug] ? { backgroundColor: toolColors[tool.slug] } : undefined}
                   >
                     {tool.title}
                   </Link>
