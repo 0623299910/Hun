@@ -234,19 +234,36 @@ export function Sidebar() {
                     </div>
                   </div>
                 ) : (
-                  <Link
-                    href={`/tool/${tool.slug}`}
-                    className={`block rounded-xl px-3 py-2.5 text-sm leading-snug transition ${
-                      active
-                        ? "bg-ink text-white shadow-soft"
-                        : toolColors[tool.slug]
-                        ? "text-ink hover:opacity-80"
-                        : "bg-white/80 text-ink hover:bg-coral/20"
-                    }`}
-                    style={!active && toolColors[tool.slug] ? { backgroundColor: toolColors[tool.slug] } : undefined}
-                  >
-                    {tool.title}
-                  </Link>
+                  <div>
+                    <Link
+                      href={`/tool/${tool.slug}`}
+                      className={`block rounded-xl px-3 py-2.5 text-sm leading-snug transition ${
+                        active
+                          ? "bg-ink text-white shadow-soft"
+                          : toolColors[tool.slug]
+                          ? "text-ink hover:opacity-80"
+                          : "bg-white/80 text-ink hover:bg-coral/20"
+                      }`}
+                      style={!active && toolColors[tool.slug] ? { backgroundColor: toolColors[tool.slug] } : undefined}
+                    >
+                      {tool.title}
+                    </Link>
+                    <div className="mt-1 flex items-center gap-1 px-3">
+                      {COLOR_PRESETS.map((preset) => (
+                        <button
+                          key={preset.value || "default"}
+                          title={preset.label}
+                          onClick={() => setColor(tool.slug, preset.value)}
+                          className={`h-3.5 w-3.5 rounded-full border transition hover:scale-110 ${
+                            (toolColors[tool.slug] || "") === preset.value
+                              ? "border-ink/70 scale-110"
+                              : "border-ink/20 hover:border-ink/50"
+                          }`}
+                          style={{ backgroundColor: preset.value || "#e5e7eb" }}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 )}
               </li>
             );
