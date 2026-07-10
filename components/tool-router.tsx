@@ -7,6 +7,7 @@ import { type ComponentType } from "react";
 const componentMap: Record<string, ComponentType> = {
   "001-hundreds-cut": dynamic(() => import("./tools/tool-001-hundreds-cut")),
   "002-low-probability": dynamic(() => import("./tools/tool-002-low-probability")),
+  "003-tens-ones-dead": dynamic(() => import("./tools/tool-003-tens-ones-dead")),
   "004-hell-pairs": dynamic(() => import("./tools/tool-004-hell-pairs")),
   "005-three-pair-formulas": dynamic(() => import("./tools/tool-005-three-pair-formulas")),
   "006-green-three": dynamic(() => import("./tools/tool-006-green-three")),
