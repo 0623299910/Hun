@@ -35,6 +35,7 @@ const componentMap: Record<string, ComponentType> = {
   "038-compare-tens-pin": dynamic(() => import("./tools/tool-038-compare-tens-pin")),
   "039-parity-pair-dead": dynamic(() => import("./tools/tool-039-parity-pair-dead")),
   "040-featured-7": dynamic(() => import("./tools/tool-040-featured-7")),
+  "041-found-seven-pairs": dynamic(() => import("./tools/tool-041-found-seven-pairs")),
 };
 
 export function ToolRouter({ slug }: { slug: string }) {

@@ -186,6 +186,12 @@ export const legacyTools: LegacyTool[] = [
     fileName: "สถิติรวม.html",
     description: "สถิติรวมทุกสูตร",
   },
+  {
+    slug: "041-found-seven-pairs",
+    title: "41. คู่ดับสองตัวล่าง (Found Seven)",
+    fileName: "",
+    description: "สูตรคู่ดับสองตัวล่างจาก Found Seven — ×7, ×3, บวกรวม, +567, +789, โซ่หน่วย, โซ่ร้อย และคู่ดับเทพ พร้อม heatmap 10×10",
+  },
 ];
 
 export const toolMap = new Map(legacyTools.map((tool) => [tool.slug, tool]));

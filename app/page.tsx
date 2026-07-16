@@ -13,6 +13,14 @@ export default function Home() {
           โปรเจกต์นี้ย้ายเครื่องมือจากไฟล์ HTML เดิมทั้งหมดมาอยู่ใน Web App เดียว
           พร้อมเมนูสารบัญด้านซ้ายและโครงสร้างที่พร้อมต่อยอดเป็นคอมโพเนนต์ Next.js เต็มรูปแบบ
         </p>
+        <Link
+          href="/dashboard"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-6 py-3 font-bold text-white backdrop-blur-sm transition hover:bg-white/30 hover:shadow-lg"
+        >
+          <span className="text-xl">📊</span>
+          <span>เปิด Dashboard - ดูทุกเครื่องมือในหน้าเดียว</span>
+          <span className="text-xl">→</span>
+        </Link>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

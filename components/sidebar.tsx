@@ -180,6 +180,18 @@ export function Sidebar() {
               🏠 หน้าหลัก
             </Link>
           </li>
+          <li>
+            <Link
+              href="/dashboard"
+              className={`block rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+                pathname === "/dashboard"
+                  ? "bg-gradient-to-r from-pine to-green-600 text-white shadow-lg"
+                  : "bg-gradient-to-r from-pine/90 to-green-500 text-white hover:from-pine hover:to-green-600"
+              }`}
+            >
+              📊 Dashboard - รวมทุกเครื่องมือ
+            </Link>
+          </li>
           {sortedTools.map((tool, idx) => {
             const active = pathname === `/tool/${tool.slug}`;
             return (
